@@ -66,10 +66,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const gameCards = document.querySelectorAll('.game-card');
     const modals = document.querySelectorAll('.game-modal');
     const closeButtons = document.querySelectorAll('.modal-close');
+    const creatorLinks = document.querySelectorAll('.creator-link');
     
     // Open modal when clicking on game card
     gameCards.forEach(card => {
-        card.addEventListener('click', function() {
+        card.addEventListener('click', function(e) {
+            // Don't trigger if clicking on the creator link
+            if (e.target.classList.contains('creator-link')) {
+                return;
+            }
+            
             const gameType = this.getAttribute('data-game');
             const modal = document.getElementById(`${gameType}-modal`);
             if (modal) {
@@ -215,6 +221,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Start flickering effect
     flickerLight();
+    
+    // Open creator modal when clicking on creator link
+    creatorLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const creatorType = this.getAttribute('data-creator');
+            const modal = document.getElementById(`${creatorType}-modal`);
+            
+            if (modal) {
+                modal.classList.add('active');
+                playRandomSound(); // Add spooky sound when opening modal
+                
+                // Prevent body scrolling when modal is open
+                document.body.style.overflow = 'hidden';
+            }
+        });
+        
+        link.addEventListener('mouseenter', function() {
+            // Grow cursor on hover for interactive feedback
+            cursor.classList.add('cursor-grow');
+            glow.classList.add('cursor-grow');
+        });
+        
+        link.addEventListener('mouseleave', function() {
+            // Return cursor to normal size
+            cursor.classList.remove('cursor-grow');
+            glow.classList.remove('cursor-grow');
+        });
+    });
 });
 
 // Add a custom style element for the cursor and floating elements
@@ -373,8 +408,8 @@ const quizData = [
     },
     {
         question: "Which of these is NOT one of my favorite horror games?",
-        options: ["Dandy's World", "Scary Sushi", "Midnight Horror", "Ghosted"],
-        correctAnswer: 3 // Index of correct answer (Ghosted)
+        options: ["Dandy's World", "Scary Sushi", "Ghosted"],
+        correctAnswer: 2 // Index of correct answer (Ghosted)
     },
     {
         question: "Which space location have I visited multiple times?",
@@ -385,6 +420,67 @@ const quizData = [
         question: "What am I most interested in besides horror games?",
         options: ["Soccer", "Space Exploration", "Dinosaurs", "Cooking"],
         correctAnswer: 1 // Index of correct answer (Space Exploration)
+    },
+    {
+        question: "When was Dandy's World created?",
+        options: ["January 26th, 2024", "December 15th, 2023", "March 3rd, 2024", "February 9th, 2024"],
+        correctAnswer: 0 // Index of correct answer (January 26th, 2024)
+    },
+    {
+        question: "What is the most dangerous entity in Dandy's World?",
+        options: ["Twisted Cakepop", "Twisted Ducky", "Twisted Dandy", "Twisted Bunny"],
+        correctAnswer: 2 // Index of correct answer (Twisted Dandy)
+    },
+    {
+        question: "When did Dandy's World reach 2 billion visits?",
+        options: ["January 15th, 2025", "February 21st, 2025", "March 1st, 2025", "December 30th, 2024"],
+        correctAnswer: 1 // Index of correct answer (February 21st, 2025)
+    },
+    {
+        question: "What type of game is Scary Sushi?",
+        options: ["Battle Royale", "Puzzle Solver", "Horror Cooking", "Platformer"],
+        correctAnswer: 2 // Index of correct answer (Horror Cooking)
+    },
+    {
+        question: "What position are players interviewing for in Scary Sushi?",
+        options: ["Server", "Host", "Chef", "Manager"],
+        correctAnswer: 2 // Index of correct answer (Chef)
+    },
+    // New questions about game creators
+    {
+        question: "Which studio created Dandy's World?",
+        options: ["Evil Twin Games", "BlushCrunch Studio", "Roblox Corporation", "Nightmare Factory"],
+        correctAnswer: 1 // Index of correct answer (BlushCrunch Studio)
+    },
+    {
+        question: "When was BlushCrunch Studio founded?",
+        options: ["Early 2023", "Late 2023", "Early 2024", "Late 2022"],
+        correctAnswer: 1 // Index of correct answer (Late 2023)
+    },
+    {
+        question: "What inspired the name 'BlushCrunch'?",
+        options: ["The founders' favorite cereal", "The contrast between cute aesthetics and horror elements", "A popular song lyric", "The sound effects in their games"],
+        correctAnswer: 1 // Index of correct answer (The contrast between cute aesthetics and horror elements)
+    },
+    {
+        question: "Which studio developed Scary Sushi?",
+        options: ["Evil Twin Games", "BlushCrunch Studio", "Horror Bytes", "Moonlight Interactive"],
+        correctAnswer: 0 // Index of correct answer (Evil Twin Games)
+    },
+    {
+        question: "How many developers originally formed Evil Twin Games?",
+        options: ["One", "Two", "Three", "Four"],
+        correctAnswer: 1 // Index of correct answer (Two)
+    },
+    {
+        question: "What sub-genre did Evil Twin Games pioneer on Roblox?",
+        options: ["Space horror", "Horror cooking", "Horror racing", "Educational horror"],
+        correctAnswer: 1 // Index of correct answer (Horror cooking)
+    },
+    {
+        question: "How many total chapters are planned for Scary Sushi?",
+        options: ["Three", "Four", "Five", "Six"],
+        correctAnswer: 2 // Index of correct answer (Five)
     }
 ];
 

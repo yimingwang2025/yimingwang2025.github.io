@@ -199,8 +199,28 @@ h2 {
 }
 
 .game-card p {
-    padding: 0 15px 15px;
+    color: var(--bone-white);
+    font-size: 1rem;
     text-align: center;
+}
+
+.game-creator {
+    margin-top: 10px;
+    font-size: 0.9rem !important;
+    font-style: italic;
+    color: var(--toxic-green) !important;
+}
+
+.creator-link {
+    color: var(--toxic-green);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.creator-link:hover {
+    color: var(--blood-red);
+    text-shadow: 0 0 5px var(--blood-red);
 }
 
 /* Interests Section */
