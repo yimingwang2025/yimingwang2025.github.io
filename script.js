@@ -66,16 +66,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const gameCards = document.querySelectorAll('.game-card');
     const modals = document.querySelectorAll('.game-modal');
     const closeButtons = document.querySelectorAll('.modal-close');
-    const creatorLinks = document.querySelectorAll('.creator-link');
+    const creatorButtons = document.querySelectorAll('.creator-info-btn');
+    const creatorCards = document.querySelectorAll('.creator-card');
     
     // Open modal when clicking on game card
     gameCards.forEach(card => {
-        card.addEventListener('click', function(e) {
-            // Don't trigger if clicking on the creator link
-            if (e.target.classList.contains('creator-link')) {
-                return;
-            }
-            
+        card.addEventListener('click', function(e) {            
             const gameType = this.getAttribute('data-game');
             const modal = document.getElementById(`${gameType}-modal`);
             if (modal) {
@@ -222,10 +218,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start flickering effect
     flickerLight();
     
-    // Open creator modal when clicking on creator link
-    creatorLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
+    // Open creator modal when clicking on creator info button
+    creatorButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
             const creatorType = this.getAttribute('data-creator');
             const modal = document.getElementById(`${creatorType}-modal`);
             
@@ -237,14 +232,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.style.overflow = 'hidden';
             }
         });
-        
-        link.addEventListener('mouseenter', function() {
+    });
+    
+    // Add hover effects for creator cards
+    creatorCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
             // Grow cursor on hover for interactive feedback
             cursor.classList.add('cursor-grow');
             glow.classList.add('cursor-grow');
+            
+            // Maybe play a sound
+            playRandomSound();
         });
         
-        link.addEventListener('mouseleave', function() {
+        card.addEventListener('mouseleave', function() {
             // Return cursor to normal size
             cursor.classList.remove('cursor-grow');
             glow.classList.remove('cursor-grow');

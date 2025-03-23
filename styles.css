@@ -223,6 +223,81 @@ h2 {
     text-shadow: 0 0 5px var(--blood-red);
 }
 
+/* Creators Section */
+.creator-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 30px;
+}
+
+.creator-card {
+    background-color: var(--misty-gray);
+    border-radius: 10px;
+    overflow: hidden;
+    padding-bottom: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.creator-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 25px rgba(139, 0, 0, 0.6);
+}
+
+.creator-logo {
+    height: 150px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 20px auto;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+}
+
+.creator-card:hover .creator-logo {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.blushcrunch-logo {
+    background-image: url('images/BlushCrunchLogo.webp');
+}
+
+.eviltwin-logo {
+    background-image: url('images/h.webp');
+}
+
+.creator-card h3 {
+    font-family: 'Creepster', cursive;
+    color: var(--toxic-green);
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.creator-card p {
+    color: var(--bone-white);
+    font-size: 1rem;
+    margin-bottom: 20px;
+}
+
+.creator-info-btn {
+    background-color: var(--eerie-purple);
+    color: var(--bone-white);
+    border: none;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.creator-info-btn:hover {
+    background-color: var(--blood-red);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
 /* Interests Section */
 .interest-grid {
     display: grid;
