@@ -1,0 +1,522 @@
+/* Horror Theme CSS */
+:root {
+    --dark-bg: #0a0a0a;
+    --blood-red: #8b0000;
+    --eerie-purple: #4a0e5c;
+    --bone-white: #e6e6e6;
+    --toxic-green: #39ff14;
+    --misty-gray: #333333;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--dark-bg);
+    color: var(--bone-white);
+    background-image: url('https://www.transparenttextures.com/patterns/black-paper.png');
+    position: relative;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Header Styles */
+header {
+    text-align: center;
+    padding: 50px 0;
+    position: relative;
+}
+
+h1 {
+    font-family: 'Creepster', cursive;
+    font-size: 5rem;
+    color: var(--blood-red);
+    text-shadow: 3px 3px 0 var(--eerie-purple),
+                 5px 5px 10px rgba(0, 0, 0, 0.7);
+    margin-bottom: 10px;
+    animation: flicker 3s infinite alternate;
+}
+
+.tagline {
+    font-size: 1.5rem;
+    color: var(--toxic-green);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+    margin-bottom: 25px;
+}
+
+/* Navigation Styles */
+.main-nav {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0;
+}
+
+.main-nav li {
+    margin: 0 15px;
+}
+
+.main-nav a {
+    color: var(--bone-white);
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: bold;
+    position: relative;
+    padding: 5px 10px;
+    transition: all 0.3s ease;
+}
+
+.main-nav a:hover {
+    color: var(--toxic-green);
+    text-shadow: 0 0 8px var(--toxic-green);
+}
+
+.main-nav a::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--blood-red);
+    transition: width 0.3s ease;
+}
+
+.main-nav a:hover::before {
+    width: 100%;
+}
+
+/* Section Styles */
+section {
+    margin-bottom: 60px;
+    padding: 30px;
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 20px rgba(139, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--blood-red), transparent);
+}
+
+h2 {
+    font-family: 'Creepster', cursive;
+    font-size: 2.5rem;
+    color: var(--blood-red);
+    margin-bottom: 25px;
+    text-align: center;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
+}
+
+/* About Section */
+.about-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bio {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    text-align: center;
+    max-width: 800px;
+}
+
+.bio p {
+    margin-bottom: 15px;
+}
+
+/* Game Cards */
+.game-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 30px;
+}
+
+.game-card {
+    background-color: var(--misty-gray);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+.game-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 25px rgba(139, 0, 0, 0.6);
+}
+
+.game-image {
+    height: 180px;
+    background-size: cover;
+    background-position: center;
+    border-bottom: 3px solid var(--blood-red);
+}
+
+.dandys-world {
+    background-image: url('https://m.media-amazon.com/images/M/MV5BM2M4M2YyMGMtZjk3Yi00Mzc1LWJkMGYtMjM5NjM3MzJjODVmXkEyXkFqcGc@._V1_.jpg');
+}
+
+.scary-sushi {
+    background-image: url('https://pbs.twimg.com/media/GfS10XAWEAA3JRt.jpg');
+}
+
+.blox-fruits {
+    background-image: url('https://tr.rbxcdn.com/63ae5df8bfffd281c781efaa0ff7e1e5/768/432/Image/Png');
+}
+
+.pet-simulator {
+    background-image: url('https://tr.rbxcdn.com/b39c2a4f88286573f2b203587561b890/768/432/Image/Png');
+}
+
+.game-card h3 {
+    font-family: 'Creepster', cursive;
+    padding: 15px;
+    color: var(--toxic-green);
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+.game-card p {
+    padding: 0 15px 15px;
+    text-align: center;
+}
+
+/* Interests Section */
+.interest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 30px;
+}
+
+.interest-card {
+    padding: 20px;
+    border-radius: 10px;
+    background-color: var(--misty-gray);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.interest-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0.15;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+.interest-card:hover::before {
+    opacity: 0.3;
+}
+
+.space::before {
+    background-image: url('https://images.unsplash.com/photo-1614642264762-d0a3b8bf3700');
+}
+
+.math::before {
+    background-image: url('https://images.unsplash.com/photo-1509228627152-72ae9ae6848d');
+}
+
+.engineering::before {
+    background-image: url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158');
+}
+
+.design::before {
+    background-image: url('https://images.unsplash.com/photo-1558655146-d09347e92766');
+}
+
+.interest-card h3 {
+    font-family: 'Creepster', cursive;
+    color: var(--toxic-green);
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 30px 0;
+    color: var(--bone-white);
+    font-size: 1rem;
+    position: relative;
+}
+
+footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--blood-red), transparent);
+}
+
+/* Spider Webs */
+.spider-web {
+    position: fixed;
+    width: 300px;
+    height: 300px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.2;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.top-left {
+    top: 0;
+    left: 0;
+    background-image: url('https://www.pngall.com/wp-content/uploads/2016/07/Spider-Web-PNG-Image.png');
+    transform: rotate(0deg);
+}
+
+.top-right {
+    top: 0;
+    right: 0;
+    background-image: url('https://www.pngall.com/wp-content/uploads/2016/07/Spider-Web-PNG-Image.png');
+    transform: rotate(90deg);
+}
+
+.bottom-left {
+    bottom: 0;
+    left: 0;
+    background-image: url('https://www.pngall.com/wp-content/uploads/2016/07/Spider-Web-PNG-Image.png');
+    transform: rotate(270deg);
+}
+
+.bottom-right {
+    bottom: 0;
+    right: 0;
+    background-image: url('https://www.pngall.com/wp-content/uploads/2016/07/Spider-Web-PNG-Image.png');
+    transform: rotate(180deg);
+}
+
+/* Floating Ghosts */
+.floating-ghost {
+    position: fixed;
+    width: 100px;
+    height: 100px;
+    background-image: url('https://www.freepnglogos.com/uploads/ghost-png/ghost-png-transparent-images-download-clip-10.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.ghost1 {
+    top: 20%;
+    right: 5%;
+    animation: float 15s ease-in-out infinite, fade 8s ease-in-out infinite;
+}
+
+.ghost2 {
+    bottom: 30%;
+    left: 8%;
+    animation: float 20s ease-in-out infinite, fade 10s ease-in-out infinite;
+    animation-delay: 2s;
+}
+
+.ghost3 {
+    top: 60%;
+    right: 15%;
+    animation: float 18s ease-in-out infinite, fade 9s ease-in-out infinite;
+    animation-delay: 4s;
+}
+
+/* Animations */
+@keyframes flicker {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% {
+        text-shadow: 3px 3px 0 var(--eerie-purple),
+                     5px 5px 10px rgba(0, 0, 0, 0.7);
+    }
+    20%, 24%, 55% {
+        text-shadow: none;
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0) translateX(0);
+    }
+    25% {
+        transform: translateY(-20px) translateX(20px);
+    }
+    50% {
+        transform: translateY(0) translateX(40px);
+    }
+    75% {
+        transform: translateY(20px) translateX(20px);
+    }
+    100% {
+        transform: translateY(0) translateX(0);
+    }
+}
+
+@keyframes fade {
+    0%, 100% {
+        opacity: 0.1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 3.5rem;
+    }
+    
+    .tagline {
+        font-size: 1.2rem;
+    }
+    
+    .game-cards, .interest-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    
+    .spider-web {
+        width: 200px;
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 2.5rem;
+    }
+    
+    .tagline {
+        font-size: 1rem;
+    }
+    
+    section {
+        padding: 20px 15px;
+    }
+    
+    .game-cards, .interest-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Game Info Modal */
+.game-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.game-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background-color: var(--misty-gray);
+    width: 90%;
+    max-width: 800px;
+    border-radius: 10px;
+    padding: 30px;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 0 30px var(--blood-red);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.game-modal.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: var(--blood-red);
+    color: var(--bone-white);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    border: none;
+}
+
+.modal-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--blood-red);
+}
+
+.modal-header h3 {
+    font-family: 'Creepster', cursive;
+    color: var(--toxic-green);
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.fact-list {
+    list-style-type: none;
+}
+
+.fact-list li {
+    margin-bottom: 15px;
+    padding-left: 25px;
+    position: relative;
+}
+
+.fact-list li::before {
+    content: '🔪';
+    position: absolute;
+    left: 0;
+    color: var(--blood-red);
+} 
