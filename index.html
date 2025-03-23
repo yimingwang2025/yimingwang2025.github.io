@@ -40,6 +40,7 @@
                     <li><a href="#about">About</a></li>
                     <li><a href="#games">Games</a></li>
                     <li><a href="#interests">Interests</a></li>
+                    <li><a href="#quiz">Quiz</a></li>
                 </ul>
             </nav>
         </header>
@@ -94,6 +95,24 @@
                         <h3>Creative Design</h3>
                         <p>I enjoy making digital art and designs using Canva.</p>
                     </article>
+                </div>
+            </section>
+            
+            <section id="quiz" class="quiz">
+                <h2>Test Your Knowledge About Me</h2>
+                <div class="quiz-container">
+                    <p class="quiz-intro">Think you know me well? Take this fun quiz to find out!</p>
+                    <div id="quiz-questions">
+                        <!-- Questions will be loaded by JavaScript -->
+                    </div>
+                    <div class="quiz-controls">
+                        <button id="submit-quiz" class="quiz-button">Check Answers</button>
+                        <button id="reset-quiz" class="quiz-button">Try Again</button>
+                    </div>
+                    <div id="quiz-results" class="quiz-results">
+                        <h3>Your Score: <span id="quiz-score">0</span>/<span id="quiz-total">0</span></h3>
+                        <p id="quiz-message"></p>
+                    </div>
                 </div>
             </section>
         </main>

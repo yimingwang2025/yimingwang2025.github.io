@@ -357,4 +357,173 @@ style.textContent = `
     }
 `;
 
-document.head.appendChild(style); 
+document.head.appendChild(style);
+
+// Quiz functionality
+const quizData = [
+    {
+        question: "What is my Roblox username?",
+        options: ["mewtwo_rip", "killer_mewtwo", "rip_mewtwo", "mewtwo_killer"],
+        correctAnswer: 2 // Index of correct answer (rip_mewtwo)
+    },
+    {
+        question: "What grade am I in?",
+        options: ["1st grade", "2nd grade", "3rd grade", "4th grade"],
+        correctAnswer: 1 // Index of correct answer (2nd grade)
+    },
+    {
+        question: "Which of these is NOT one of my favorite horror games?",
+        options: ["Dandy's World", "Scary Sushi", "Midnight Horror", "Ghosted"],
+        correctAnswer: 3 // Index of correct answer (Ghosted)
+    },
+    {
+        question: "Which space location have I visited multiple times?",
+        options: ["NASA Johnson Space Center", "Kennedy Space Center", "SpaceX Launch Facility", "Jet Propulsion Laboratory"],
+        correctAnswer: 1 // Index of correct answer (Kennedy Space Center)
+    },
+    {
+        question: "What am I most interested in besides horror games?",
+        options: ["Soccer", "Space Exploration", "Dinosaurs", "Cooking"],
+        correctAnswer: 1 // Index of correct answer (Space Exploration)
+    }
+];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Quiz initialization
+    const quizQuestionsContainer = document.getElementById('quiz-questions');
+    const submitButton = document.getElementById('submit-quiz');
+    const resetButton = document.getElementById('reset-quiz');
+    const resultsContainer = document.getElementById('quiz-results');
+    const scoreSpan = document.getElementById('quiz-score');
+    const totalSpan = document.getElementById('quiz-total');
+    const messageEl = document.getElementById('quiz-message');
+    
+    // Initially hide the results and reset button
+    resultsContainer.style.display = 'none';
+    resetButton.style.display = 'none';
+    
+    // Rendering the quiz questions
+    function renderQuiz() {
+        quizQuestionsContainer.innerHTML = '';
+        totalSpan.textContent = quizData.length;
+        
+        quizData.forEach((questionData, questionIndex) => {
+            const questionEl = document.createElement('div');
+            questionEl.classList.add('quiz-question');
+            
+            const questionTitle = document.createElement('h4');
+            questionTitle.textContent = `${questionIndex + 1}. ${questionData.question}`;
+            questionEl.appendChild(questionTitle);
+            
+            const optionsList = document.createElement('ul');
+            optionsList.classList.add('quiz-options');
+            
+            questionData.options.forEach((option, optionIndex) => {
+                const optionEl = document.createElement('li');
+                optionEl.classList.add('quiz-option');
+                optionEl.textContent = option;
+                optionEl.setAttribute('data-question', questionIndex);
+                optionEl.setAttribute('data-option', optionIndex);
+                
+                optionEl.addEventListener('click', function() {
+                    // Remove selected class from all options in this question
+                    const questionOptions = optionsList.querySelectorAll('.quiz-option');
+                    questionOptions.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Add selected class to this option
+                    this.classList.add('selected');
+                    
+                    // Add spooky sound when selecting option
+                    playRandomSound();
+                });
+                
+                optionsList.appendChild(optionEl);
+            });
+            
+            questionEl.appendChild(optionsList);
+            quizQuestionsContainer.appendChild(questionEl);
+        });
+    }
+    
+    // Initialize quiz
+    renderQuiz();
+    
+    // Submit quiz
+    submitButton.addEventListener('click', function() {
+        let score = 0;
+        let unanswered = 0;
+        
+        quizData.forEach((questionData, questionIndex) => {
+            const selectedOption = document.querySelector(`.quiz-option.selected[data-question="${questionIndex}"]`);
+            
+            if (!selectedOption) {
+                unanswered++;
+                return;
+            }
+            
+            const optionIndex = parseInt(selectedOption.getAttribute('data-option'));
+            
+            // Check if answer is correct
+            if (optionIndex === questionData.correctAnswer) {
+                score++;
+                selectedOption.classList.add('correct');
+            } else {
+                selectedOption.classList.add('incorrect');
+                
+                // Highlight the correct answer
+                const correctOption = document.querySelector(`.quiz-option[data-question="${questionIndex}"][data-option="${questionData.correctAnswer}"]`);
+                correctOption.classList.add('correct');
+            }
+        });
+        
+        // Display results
+        scoreSpan.textContent = score;
+        
+        // Display message based on score
+        let message = '';
+        if (score === quizData.length) {
+            message = "WOW! You know me perfectly! Are you secretly me?";
+        } else if (score >= quizData.length * 0.7) {
+            message = "Great job! You know me very well!";
+        } else if (score >= quizData.length * 0.5) {
+            message = "Not bad! You know some things about me.";
+        } else {
+            message = "Let's get to know each other better!";
+        }
+        
+        // Show unanswered questions message if any
+        if (unanswered > 0) {
+            message += ` You left ${unanswered} question${unanswered > 1 ? 's' : ''} unanswered.`;
+        }
+        
+        messageEl.textContent = message;
+        resultsContainer.style.display = 'block';
+        
+        // Hide submit button, show reset button
+        submitButton.style.display = 'none';
+        resetButton.style.display = 'inline-block';
+        
+        // Disable further selections
+        const allOptions = document.querySelectorAll('.quiz-option');
+        allOptions.forEach(option => {
+            option.style.pointerEvents = 'none';
+        });
+        
+        // Play a spooky sound for feedback
+        playRandomSound();
+    });
+    
+    // Reset quiz
+    resetButton.addEventListener('click', function() {
+        // Clear all selections and classes
+        renderQuiz();
+        
+        // Reset display states
+        resultsContainer.style.display = 'none';
+        submitButton.style.display = 'inline-block';
+        resetButton.style.display = 'none';
+        
+        // Play a spooky sound
+        playRandomSound();
+    });
+}); 
