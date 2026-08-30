@@ -1,0 +1,247 @@
+/* Eggleton — shared styles for the public pages (index, privacy, support). */
+
+:root {
+  --bg:        #fdfaf4;
+  --bg-panel:  #ffffff;
+  --ink:       #241f1a;
+  --ink-soft:  #5c5348;
+  --ink-faint: #8b8175;
+  --rule:      #e7ddcc;
+  --accent:    #c9722a;
+  --accent-2:  #7a9a5b;
+  --shadow:    0 1px 2px rgba(36, 31, 26, .06), 0 8px 24px rgba(36, 31, 26, .05);
+  --radius:    14px;
+  --measure:   38rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #16130f;
+    --bg-panel:  #201c17;
+    --ink:       #f2ece2;
+    --ink-soft:  #bdb3a4;
+    --ink-faint: #8b8175;
+    --rule:      #342e26;
+    --accent:    #e79a55;
+    --accent-2:  #9dbb7c;
+    --shadow:    0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "kern" 1;
+}
+
+.wrap {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 5rem;
+}
+
+.wrap--wide { max-width: 48rem; }
+
+/* ---- masthead ---------------------------------------------------------- */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: 1.5rem 0 .5rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 2rem;
+}
+
+.masthead .mark {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.masthead a.brand {
+  font-weight: 650;
+  font-size: 1.05rem;
+  letter-spacing: -.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.masthead nav {
+  margin-left: auto;
+  display: flex;
+  gap: 1.1rem;
+  font-size: .93rem;
+}
+
+.masthead nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.masthead nav a:hover,
+.masthead nav a[aria-current="page"] { color: var(--accent); }
+
+/* ---- type -------------------------------------------------------------- */
+
+h1 {
+  font-size: clamp(1.8rem, 1.3rem + 2.2vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -.022em;
+  margin: 0 0 .35rem;
+}
+
+h2 {
+  font-size: 1.2rem;
+  letter-spacing: -.012em;
+  margin: 2.6rem 0 .6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--rule);
+}
+
+h3 {
+  font-size: 1.02rem;
+  margin: 1.8rem 0 .3rem;
+}
+
+p, li { color: var(--ink-soft); }
+
+p { margin: 0 0 1rem; }
+
+a { color: var(--accent); }
+
+strong { color: var(--ink); font-weight: 620; }
+
+.dateline {
+  color: var(--ink-faint);
+  font-size: .9rem;
+  margin: 0 0 2rem;
+}
+
+.lede {
+  font-size: 1.13rem;
+  color: var(--ink);
+  margin-bottom: 1.6rem;
+}
+
+ul { padding-left: 1.15rem; margin: 0 0 1.2rem; }
+li { margin-bottom: .4rem; }
+
+ul.plain {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul.plain li {
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+ul.plain li::before {
+  content: "";
+  position: absolute;
+  left: .25rem;
+  top: .72em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+
+code, .mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: .9em;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  padding: .1em .35em;
+  border-radius: 4px;
+}
+
+/* ---- components -------------------------------------------------------- */
+
+.hero {
+  padding: 1rem 0 2.2rem;
+}
+
+.hero .sub {
+  font-size: 1.2rem;
+  color: var(--accent);
+  font-weight: 550;
+  margin: 0 0 1.2rem;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.15rem 1.3rem;
+  margin: 1.5rem 0;
+}
+
+.panel h3 { margin-top: 0; }
+.panel > :last-child { margin-bottom: 0; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.grid .panel { margin: 0; }
+
+.faq {
+  border-bottom: 1px solid var(--rule);
+  padding: 1.1rem 0;
+}
+
+.faq:first-of-type { border-top: 1px solid var(--rule); }
+
+.faq h3 {
+  margin: 0 0 .35rem;
+  color: var(--ink);
+  font-size: 1.02rem;
+}
+
+.faq p:last-child { margin-bottom: 0; }
+
+.callout {
+  border-left: 3px solid var(--accent);
+  padding: .1rem 0 .1rem 1rem;
+  margin: 1.5rem 0;
+}
+
+.callout p:last-child { margin-bottom: 0; }
+
+.rarity {
+  display: inline-block;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin-bottom: .3rem;
+}
+
+footer {
+  margin-top: 4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-faint);
+  font-size: .88rem;
+}
+
+footer a { color: var(--ink-faint); }
+
+.placeholder {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-bottom: 1px dashed var(--accent);
+  padding: 0 .2em;
+  font-style: normal;
+}
