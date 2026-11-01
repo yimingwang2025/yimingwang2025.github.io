@@ -331,6 +331,38 @@
   .pts { position: absolute; font-family: "Press Start 2P", monospace; font-size: 0.8rem; color: var(--yellow); pointer-events: none; animation: rise .9s ease-out forwards; z-index: 3; }
   @keyframes rise { to { transform: translateY(-40px); opacity: 0; } }
   .mute { background: none; border: 0; cursor: pointer; font-size: 1.1rem; padding: 0; }
+  .timer { height: 8px; border-radius: 999px; background: #23432f; margin: -8px 0 16px; overflow: hidden; }
+  .timer i { display: block; height: 100%; width: 100%; background: var(--yellow); border-radius: 999px; }
+  .timer.hurry i { background: var(--red); }
+  .timer.frozen i { background: #8fd8ff; }
+  .lifelines { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .lifelines button {
+    font: inherit; font-weight: 700; font-size: .9rem; cursor: pointer;
+    background: transparent; color: #cfe9d8; border: 2px dashed #2f5a40; border-radius: 12px; padding: 4px 12px;
+  }
+  .lifelines button:hover:not(:disabled) { border-color: var(--lime); color: #fff; }
+  .lifelines button:disabled { opacity: .3; cursor: default; text-decoration: line-through; }
+  .opts button.gone { visibility: hidden; }
+  .buddy { display: flex; gap: 10px; align-items: flex-start; flex: 1 1 260px; }
+  .buddy .face { font-size: 34px; line-height: 1; }
+  .buddy .face.happy { animation: pop .4s; }
+  .buddy .face.sad { animation: shake .4s; }
+  .bubble { background: #fff; color: var(--ink); border-radius: 14px; padding: 8px 12px; font-weight: 600; position: relative; }
+  .bubble::before { content: ""; position: absolute; left: -7px; top: 12px; border: 7px solid transparent; border-left: 0; border-right-color: #fff; }
+  .bubble b { color: var(--green-dark); }
+  .bubble b.no { color: #c4304c; }
+  .review { text-align: left; margin: 0 auto 16px; max-width: 460px; background: #1d3a29; border-radius: 14px; padding: 10px 14px; }
+  .review summary { cursor: pointer; font-weight: 700; color: var(--yellow); }
+  .review li { margin-top: 6px; color: #cfe9d8; }
+  .review li b { color: #fff; }
+  .board { margin: 4px auto 16px; max-width: 320px; font-size: .6rem; line-height: 2.2; color: var(--lime); }
+  .board div { display: flex; justify-content: space-between; gap: 10px; }
+  .board .me { color: var(--yellow); }
+  .initials { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .initials input {
+    font-family: "Press Start 2P", monospace; font-size: .9rem; text-transform: uppercase; text-align: center;
+    width: 120px; padding: 10px; border-radius: 12px; border: 2px solid var(--lime); background: #0a1a10; color: var(--yellow);
+  }
 
   footer { text-align: center; color: var(--muted); margin-top: 48px; font-size: 0.65rem; line-height: 2; }
 
@@ -593,29 +625,55 @@
   const sndWrong = () => beep([[220, 0, .18], [160, .15, .25]]);
   const sndWin   = () => beep([[523, 0, .12], [659, .12, .12], [784, .24, .12], [1047, .36, .3]]);
 
-  function getBest() { try { return JSON.parse(localStorage.getItem("quizBest")) || {}; } catch (e) { return {}; } }
-  function setBest(b) { try { localStorage.setItem("quizBest", JSON.stringify(b)); } catch (e) {} }
+  const TIME = 15; // seconds per question
+  const CHEERS = ["Sss-super!", "You got it!", "Correct-o!", "Fang-tastic!", "Nailed it!"];
+  const STREAKS = ["You're on fire!", "Unstoppable!", "Sss-sizzling streak!"];
+  const OOPS = ["Oopsie!", "Not quite!", "Hiss… nope!", "So close!"];
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  function getBoard() { try { return JSON.parse(localStorage.getItem("quizBoard")) || []; } catch (e) { return []; } }
+  function setBoard(b) { try { localStorage.setItem("quizBoard", JSON.stringify(b)); } catch (e) {} }
+  const boardHTML = (board, mine) => board.length ? `<div class="board pixel">${board.map((r, i) =>
+    `<div class="${i === mine ? "me" : ""}"><span>${i + 1}. ${r.name}</span><span>${r.points} PTS</span></div>`).join("")}</div>` : "";
 
   function startScreen() {
-    const best = getBest();
+    stopTimer();
+    const board = getBoard();
     quiz.innerHTML = `
       <div class="center">
-        <div class="rank">🕹️</div>
+        <div class="rank">🐍</div>
         <h3 class="pixel">QUIZ CHALLENGE</h3>
-        <p>Answer fast and keep your streak going for bonus points! Use the buttons or press 1, 2 or 3.</p>
+        <p>Hi, I'm Yiming's snake buddy! Beat the clock, keep your 🔥 streak and use your helpers wisely. Press 1, 2 or 3 to answer fast.</p>
         <div class="buttons">
           <button class="big-btn" data-n="10">QUICK · 10 ▶</button>
           <button class="big-btn alt" data-n="${QUIZ.length}">ALL ${QUIZ.length} ▶</button>
         </div>
-        ${best.points ? `<div class="best pixel">HIGH SCORE: ${best.points} PTS</div>` : ""}
+        ${board.length ? `<div class="best pixel">TOP PLAYERS</div>${boardHTML(board, -1)}` : ""}
       </div>`;
     quiz.querySelectorAll("[data-n]").forEach(b => b.onclick = () => start(+b.dataset.n));
   }
 
+  let helpers, missed, timeLeft, frozen, raf;
   function start(n) {
     round = shuffle(QUIZ).slice(0, n);
     idx = 0; correct = 0; streak = 0; bestStreak = 0; points = 0;
+    helpers = { half: true, freeze: true };
+    missed = [];
     showQuestion();
+  }
+
+  function hud() {
+    return `
+      <span>Q ${idx + 1}/${round.length}</span>
+      <span class="streak">${streak >= 2 ? "🔥 x" + streak : ""}</span>
+      <span>${points} PTS <button class="mute" title="Sound on/off">${muted ? "🔇" : "🔊"}</button></span>`;
+  }
+  function wireMute() {
+    quiz.querySelector(".mute").onclick = () => {
+      muted = !muted;
+      try { localStorage.setItem("quizMuted", muted ? "1" : "0"); } catch (e) {}
+      quiz.querySelector(".mute").textContent = muted ? "🔇" : "🔊";
+    };
   }
 
   function showQuestion() {
@@ -623,38 +681,72 @@
     locked = false;
     item.order = shuffle(item.a);
     quiz.innerHTML = `
-      <div class="hud pixel">
-        <span>Q ${idx + 1}/${round.length}</span>
-        <span class="streak">${streak >= 2 ? "🔥 x" + streak : ""}</span>
-        <span>${points} PTS <button class="mute" title="Sound on/off">${muted ? "🔇" : "🔊"}</button></span>
-      </div>
+      <div class="hud pixel">${hud()}</div>
       <div class="progress"><i style="width:${idx / round.length * 100}%"></i></div>
+      <div class="timer"><i></i></div>
       <p class="question">${item.q}</p>
       <div class="opts">${item.order.map((t, i) => `<button data-i="${i}"><kbd>${i + 1}</kbd>${t}</button>`).join("")}</div>
+      <div class="lifelines">
+        <button data-h="half" ${helpers.half ? "" : "disabled"}>✂️ 50/50</button>
+        <button data-h="freeze" ${helpers.freeze ? "" : "disabled"}>❄️ Freeze time</button>
+      </div>
       <div class="feedback"></div>`;
     quiz.querySelectorAll(".opts button").forEach(b => b.onclick = () => answer(+b.dataset.i));
-    quiz.querySelector(".mute").onclick = () => {
-      muted = !muted;
-      try { localStorage.setItem("quizMuted", muted ? "1" : "0"); } catch (e) {}
-      quiz.querySelector(".mute").textContent = muted ? "🔇" : "🔊";
-    };
-    item.shownAt = performance.now();
+    quiz.querySelector('[data-h="half"]').onclick = useHalf;
+    quiz.querySelector('[data-h="freeze"]').onclick = useFreeze;
+    wireMute();
+    startTimer();
   }
+
+  function useHalf(e) {
+    if (locked || !helpers.half) return;
+    helpers.half = false; e.currentTarget.disabled = true;
+    const item = round[idx];
+    const wrong = item.order.map((t, i) => i).filter(i => item.order[i] !== item.a[0]);
+    quiz.querySelectorAll(".opts button")[pick(wrong)].classList.add("gone");
+    beep([[880, 0, .06], [440, .06, .08]]);
+  }
+  function useFreeze(e) {
+    if (locked || !helpers.freeze) return;
+    helpers.freeze = false; e.currentTarget.disabled = true;
+    frozen = true;
+    quiz.querySelector(".timer").classList.add("frozen");
+    beep([[1200, 0, .08], [1500, .08, .12]]);
+  }
+
+  // Timer runs on animation frames so it pauses when the tab is hidden
+  function startTimer() {
+    stopTimer();
+    timeLeft = TIME; frozen = false;
+    let last = performance.now();
+    const bar = quiz.querySelector(".timer i"), wrap = quiz.querySelector(".timer");
+    const step = now => {
+      const dt = Math.min((now - last) / 1000, 0.1); last = now;
+      if (!frozen) timeLeft -= dt;
+      bar.style.width = Math.max(0, timeLeft / TIME * 100) + "%";
+      wrap.classList.toggle("hurry", !frozen && timeLeft < 5);
+      if (timeLeft <= 0) { answer(-1); return; }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  }
+  function stopTimer() { cancelAnimationFrame(raf); }
 
   function answer(i) {
     if (locked) return;
     locked = true;
+    stopTimer();
     const item = round[idx];
     const buttons = quiz.querySelectorAll(".opts button");
     const rightIdx = item.order.indexOf(item.a[0]);
     buttons.forEach(b => b.disabled = true);
+    quiz.querySelectorAll(".lifelines button").forEach(b => b.disabled = true);
     buttons[rightIdx].classList.add("right");
     const ok = i === rightIdx;
-    let gained = 0;
+    let say;
     if (ok) {
       correct++; streak++; bestStreak = Math.max(bestStreak, streak);
-      const secs = (performance.now() - item.shownAt) / 1000;
-      gained = 100 + Math.max(0, Math.round(50 - secs * 5)) + (streak - 1) * 20;
+      const gained = 100 + Math.round(Math.max(0, timeLeft) / TIME * 75) + (streak - 1) * 20;
       points += gained;
       sndRight();
       const r = buttons[i].getBoundingClientRect(), q = quiz.getBoundingClientRect();
@@ -662,19 +754,20 @@
       tag.className = "pts"; tag.textContent = "+" + gained;
       tag.style.left = (r.right - q.left - 70) + "px"; tag.style.top = (r.top - q.top) + "px";
       quiz.style.position = "relative"; quiz.appendChild(tag);
+      say = `<b>${streak >= 3 ? pick(STREAKS) : pick(CHEERS)}</b> `;
     } else {
       streak = 0;
-      buttons[i].classList.add("wrong");
+      missed.push(item);
+      if (i >= 0) buttons[i].classList.add("wrong");
       sndWrong();
+      say = `<b class="no">${i < 0 ? "Time's up!" : pick(OOPS)}</b> It's ${item.a[0]}. `;
     }
-    quiz.querySelector(".hud").innerHTML = `
-      <span>Q ${idx + 1}/${round.length}</span>
-      <span class="streak">${streak >= 2 ? "🔥 x" + streak : ""}</span>
-      <span>${points} PTS</span>`;
+    quiz.querySelector(".hud").innerHTML = hud();
+    wireMute();
     quiz.querySelector(".progress i").style.width = (idx + 1) / round.length * 100 + "%";
     const last = idx === round.length - 1;
     quiz.querySelector(".feedback").innerHTML = `
-      <p><b>${ok ? (streak >= 3 ? "ON FIRE! " : "CORRECT! ") : "OOPS! "}</b>${item.fact}</p>
+      <div class="buddy"><span class="face ${ok ? "happy" : "sad"}">🐍</span><div class="bubble">${say}${item.fact}</div></div>
       <button class="big-btn">${last ? "RESULTS ▶" : "NEXT ▶"}</button>`;
     const next = quiz.querySelector(".feedback .big-btn");
     next.onclick = () => { idx++; last ? results() : showQuestion(); };
@@ -684,9 +777,8 @@
   function results() {
     const pct = correct / round.length;
     const [, emoji, title, line] = RANKS.find(r => pct >= r[0]);
-    const best = getBest();
-    const newBest = points > (best.points || 0);
-    if (newBest) setBest({ points });
+    const board = getBoard();
+    const makesBoard = points > 0 && (board.length < 5 || points > board[board.length - 1].points);
     quiz.innerHTML = `
       <div class="center">
         <div class="rank">${emoji}</div>
@@ -695,15 +787,43 @@
         <p class="pixel" style="font-size:.7rem;line-height:2;color:var(--lime)">
           SCORE ${correct}/${round.length} · ${points} PTS<br>BEST STREAK 🔥 ${bestStreak}
         </p>
+        ${makesBoard ? `
+          <div class="best pixel" style="margin:0 0 10px">🏅 TOP 5! ENTER YOUR NAME</div>
+          <form class="initials"><input maxlength="6" placeholder="ABC" aria-label="Your name" required><button class="big-btn">SAVE</button></form>` : ""}
+        <div id="board-slot">${boardHTML(board, -1)}</div>
+        ${missed.length ? `<details class="review"><summary>See the ${missed.length} you missed</summary><ul>${missed.map(m => `<li>${m.q} <b>${m.a[0]}</b></li>`).join("")}</ul></details>` : ""}
         <div class="buttons">
-          <button class="big-btn" data-n="${round.length}">PLAY AGAIN ▶</button>
+          <button class="big-btn" id="quiz-again">PLAY AGAIN ▶</button>
+          <button class="big-btn alt" id="quiz-share">SHARE</button>
           <button class="big-btn alt" id="quiz-menu">MENU</button>
         </div>
-        <div class="best pixel">${newBest ? "🏅 NEW HIGH SCORE! 🏅" : "HIGH SCORE: " + best.points + " PTS"}</div>
       </div>`;
-    quiz.querySelector("[data-n]").onclick = () => start(round.length);
+    quiz.querySelector("#quiz-again").onclick = () => start(round.length);
     quiz.querySelector("#quiz-menu").onclick = startScreen;
-    if (pct >= 0.8 || newBest) { sndWin(); confetti(); }
+    quiz.querySelector("#quiz-share").onclick = async e => {
+      const text = `I got ${correct}/${round.length} (${points} pts) on Yiming's quiz! ${title} Can you beat me? ${location.origin.startsWith("http") ? location.origin : "https://yimingwang.link"}`;
+      try {
+        if (navigator.share) await navigator.share({ text });
+        else { await navigator.clipboard.writeText(text); e.target.textContent = "COPIED!"; }
+      } catch (err) {}
+    };
+    const form = quiz.querySelector(".initials");
+    if (form) {
+      form.querySelector("input").focus({ preventScroll: true });
+      form.onsubmit = ev => {
+        ev.preventDefault();
+        const name = form.querySelector("input").value.trim().toUpperCase().slice(0, 6) || "???";
+        const b = getBoard();
+        b.push({ name, points });
+        b.sort((x, y) => y.points - x.points);
+        const top = b.slice(0, 5);
+        setBoard(top);
+        form.previousElementSibling.remove(); form.remove();
+        quiz.querySelector("#board-slot").innerHTML = boardHTML(top, top.findIndex(r => r.name === name && r.points === points));
+        sndWin();
+      };
+    }
+    if (pct >= 0.8 || makesBoard) { sndWin(); confetti(); }
   }
 
   document.addEventListener("keydown", e => {
@@ -711,7 +831,8 @@
     const r = quiz.getBoundingClientRect();
     if (r.bottom < 0 || r.top > innerHeight) return; // only when the quiz is on screen
     const n = parseInt(e.key, 10);
-    if (n >= 1 && n <= 3 && !locked) { answer(n - 1); e.preventDefault(); }
+    const btn = quiz.querySelectorAll(".opts button")[n - 1];
+    if (btn && !btn.classList.contains("gone") && !locked) { answer(n - 1); e.preventDefault(); }
   });
   startScreen();
 
