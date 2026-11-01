@@ -283,24 +283,54 @@
   }
 
   /* ---------- Quiz ---------- */
-  .q { margin-bottom: 18px; }
-  .q p { font-weight: 700; font-size: 1.15rem; margin: 0 0 8px; }
-  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .arcade {
+    background: var(--ink); color: #eafbef; border-radius: 22px; padding: 22px;
+    box-shadow: inset 0 0 0 4px #23432f, inset 0 -8px 0 rgba(0,0,0,0.25);
+    min-height: 330px; display: flex; flex-direction: column;
+  }
+  .arcade .hud { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.6rem; color: var(--lime); }
+  .arcade .hud .streak { color: var(--yellow); }
+  .progress { height: 12px; border-radius: 999px; background: #23432f; margin: 12px 0 18px; overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(-45deg, var(--lime) 0 10px, #c4f084 10px 20px); transition: width .4s; }
+  .arcade .question { font-size: 1.45rem; font-weight: 800; line-height: 1.25; margin: 0 0 16px; }
+  .opts { display: grid; gap: 10px; }
   .opts button {
-    font: inherit; font-weight: 600; cursor: pointer;
-    background: var(--bg); color: var(--ink);
-    border: 2px solid var(--line); border-radius: 14px; padding: 6px 16px;
-    box-shadow: 0 4px 0 var(--line);
-    transition: transform .1s;
+    font: inherit; font-weight: 700; font-size: 1.1rem; cursor: pointer; text-align: left;
+    background: #1d3a29; color: #fff;
+    border: 2px solid #2f5a40; border-radius: 16px; padding: 10px 16px;
+    box-shadow: 0 5px 0 #0a1a10;
+    display: flex; align-items: center; gap: 12px;
+    transition: transform .1s, box-shadow .1s, background .15s;
   }
-  .opts button:hover:not(:disabled) { transform: translateY(-2px); }
-  .opts button.right { background: var(--green); border-color: var(--green-dark); color: #fff; box-shadow: 0 4px 0 var(--green-dark); }
-  .opts button.wrong { background: var(--red); border-color: #c4304c; color: #fff; box-shadow: 0 4px 0 #c4304c; }
+  .opts button kbd { font-family: "Press Start 2P", monospace; font-size: 0.6rem; background: var(--lime); color: var(--ink); border-radius: 8px; padding: 6px 7px; }
+  .opts button:hover:not(:disabled) { transform: translateY(-2px); background: #24472f; }
+  .opts button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 #0a1a10; }
+  .opts button.right { background: var(--green); border-color: #7be0a1; animation: pop .35s; }
+  .opts button.wrong { background: var(--red); border-color: #ff9aac; animation: shake .35s; }
   .opts button:disabled { cursor: default; }
-  .score {
-    margin-top: 6px; padding: 14px; border-radius: 16px; text-align: center;
-    background: var(--ink); color: var(--lime); font-size: 0.75rem; line-height: 1.8;
+  .opts button:disabled:not(.right):not(.wrong) { opacity: .45; }
+  @keyframes pop { 50% { transform: scale(1.04); } }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .feedback { margin-top: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+  .feedback p { margin: 0; flex: 1 1 240px; color: #cfe9d8; font-weight: 600; }
+  .feedback b { color: var(--yellow); }
+  .arcade .big-btn {
+    font-family: "Press Start 2P", monospace; font-size: 0.75rem; cursor: pointer;
+    background: var(--yellow); color: #3a2a00; border: 0;
+    padding: 14px 18px; border-radius: 14px; box-shadow: 0 6px 0 #c99400;
+    transition: transform .1s, box-shadow .1s;
   }
+  .arcade .big-btn:hover { transform: translateY(2px); box-shadow: 0 4px 0 #c99400; }
+  .arcade .big-btn.alt { background: #2f5a40; color: #fff; box-shadow: 0 6px 0 #0a1a10; }
+  .arcade .center { margin: auto 0; text-align: center; }
+  .arcade .center h3 { font-size: 1.1rem; color: var(--lime); margin: 0 0 12px; line-height: 1.6; }
+  .arcade .center p { margin: 0 auto 18px; max-width: 460px; color: #cfe9d8; font-weight: 600; }
+  .arcade .rank { font-size: 64px; line-height: 1; margin-bottom: 8px; animation: bob 2.4s ease-in-out infinite; }
+  .arcade .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .arcade .best { font-size: 0.55rem; color: var(--yellow); margin-top: 16px; line-height: 1.8; }
+  .pts { position: absolute; font-family: "Press Start 2P", monospace; font-size: 0.8rem; color: var(--yellow); pointer-events: none; animation: rise .9s ease-out forwards; z-index: 3; }
+  @keyframes rise { to { transform: translateY(-40px); opacity: 0; } }
+  .mute { background: none; border: 0; cursor: pointer; font-size: 1.1rem; padding: 0; }
 
   footer { text-align: center; color: var(--muted); margin-top: 48px; font-size: 0.65rem; line-height: 2; }
 
@@ -471,9 +501,8 @@
   <!-- Quiz -->
   <section id="quiz" class="card">
     <h2>❓ How well do you know me?</h2>
-    <p class="lead">Read the page, then try my quiz!</p>
-    <div id="quiz-box"></div>
-    <div class="score pixel" id="score">ANSWER ALL THE QUESTIONS!</div>
+    <p class="lead">Read the page, then take my quiz challenge!</p>
+    <div class="arcade" id="quiz-box" aria-live="polite"></div>
   </section>
 
   <footer class="pixel">MADE BY YIMING WANG · <span id="year"></span><br>THANKS FOR VISITING!</footer>
@@ -505,57 +534,186 @@
 
   // Quiz
   const QUIZ = [
-    { q: "What is my favorite color?", a: ["Red", "Green", "Blue"], right: 1 },
-    { q: "What is my favorite animal?", a: ["Ball python", "Dog", "Shark"], right: 0 },
-    { q: "Which food do I love?", a: ["Broccoli", "Pizza", "Fries or mango"], right: 2 },
-    { q: "Which space place have I visited lots of times?", a: ["Kennedy Space Center", "The Moon", "Mars"], right: 0 },
-    { q: "What do I want to be when I grow up?", a: ["Chef", "Game developer", "Firefighter"], right: 1 },
-    { q: "What is the name of the golf game I made?", a: ["Chip & Jump", "Golf Hero", "Hole in One"], right: 0 },
-    { q: "Which space missions do I love learning about?", a: ["Star Wars", "Apollo", "Pokémon"], right: 1 },
-    { q: "Where do I post the content I make?", a: ["TikTok", "YouTube", "The newspaper"], right: 1 },
-    { q: "What does a ball python do when it's scared?", a: ["Barks", "Flies away", "Curls into a ball"], right: 2 },
-    { q: "How many courses does Chip & Jump have?", a: ["16", "78", "100"], right: 1 },
-    { q: "In Lantern Wick, what feeds the lantern's flame?", a: ["Fireflies", "Water", "Snowballs"], right: 0 },
-    { q: "What is my favorite Roblox horror game?", a: ["Doors", "Dandy's World", "Piggy"], right: 1 },
-    { q: "Which studio made Dandy's World?", a: ["BlushCrunch Studio", "Pixar", "Nintendo"], right: 0 },
-    { q: "In Dandy's World, who should you watch out for?", a: ["Happy Clown", "Friendly Fred", "Twisted Dandy"], right: 2 },
-    { q: "What year did Apollo 11 land on the Moon?", a: ["1959", "1969", "1999"], right: 1 },
-    { q: "How many people have walked on the Moon?", a: ["12", "3", "50"], right: 0 },
-    { q: "In Thunderhoof, how long do you have to stay on the bull?", a: ["1 minute", "3 seconds", "8 seconds"], right: 2 },
-    { q: "Who is the hero of my Halloween game?", a: ["A pumpkin", "A vampire", "A cat"], right: 0 },
-    { q: "How many levels does Pumpkin's Midnight Run have?", a: ["5", "20", "99"], right: 1 },
-    { q: "What should you wear for Hush Room?", a: ["Sunglasses", "A helmet", "Headphones"], right: 2 },
-    { q: "Which of my stats is a perfect 100?", a: ["Fry power", "Horror bravery", "Space knowledge"], right: 0 },
+    { q: "What is my favorite color?", a: ["Green", "Red", "Blue"], fact: "That's why this whole page is green!" },
+    { q: "What is my favorite animal?", a: ["Ball python", "Dog", "Shark"], fact: "Ball pythons are calm and curious." },
+    { q: "Which food do I love?", a: ["Fries or mango", "Broccoli", "Pizza"], fact: "Fries are so good my Fry power is 100!" },
+    { q: "Which space place have I visited lots of times?", a: ["Kennedy Space Center", "The Moon", "Mars"], fact: "It's in Florida, and I've been there lots of times." },
+    { q: "What do I want to be when I grow up?", a: ["Game developer", "Chef", "Firefighter"], fact: "…and maybe an astronaut too!" },
+    { q: "What is the name of the golf game I made?", a: ["Chip & Jump", "Golf Hero", "Hole in One"], fact: "It has a daily challenge and a course builder." },
+    { q: "Which space missions do I love learning about?", a: ["Apollo", "Star Wars", "Pokémon"], fact: "Apollo astronauts flew all the way to the Moon." },
+    { q: "Where do I post the content I make?", a: ["YouTube", "TikTok", "The newspaper"], fact: "I make videos for my YouTube channel." },
+    { q: "What does a ball python do when it's scared?", a: ["Curls into a ball", "Barks", "Flies away"], fact: "That's how it got the name ball python!" },
+    { q: "How many courses does Chip & Jump have?", a: ["78", "16", "100"], fact: "78 courses to chip and jump through." },
+    { q: "In Lantern Wick, what feeds the lantern's flame?", a: ["Fireflies", "Water", "Snowballs"], fact: "Catch them before the wick burns out!" },
+    { q: "In Lantern Wick, what are you guiding home?", a: ["A paper lantern", "A lost dog", "A rocket"], fact: "You guide it through the hills at night." },
+    { q: "What is my favorite Roblox horror game?", a: ["Dandy's World", "Doors", "Piggy"], fact: "It's the Roblox game I play the most." },
+    { q: "Which studio made Dandy's World?", a: ["BlushCrunch Studio", "Pixar", "Nintendo"], fact: "BlushCrunch Studio made it." },
+    { q: "In Dandy's World, who should you watch out for?", a: ["Twisted Dandy", "Happy Clown", "Friendly Fred"], fact: "The Twisteds hunt you down. Run!" },
+    { q: "In Dandy's World, what do you fix?", a: ["Machines", "Cars", "Sandwiches"], fact: "Fix machines and collect research to unlock new toons." },
+    { q: "What year did Apollo 11 land on the Moon?", a: ["1969", "1959", "1999"], fact: "July 1969: one small step!" },
+    { q: "How many people have walked on the Moon?", a: ["12", "3", "50"], fact: "Only 12 people ever!" },
+    { q: "The Saturn V rocket is taller than…", a: ["The Statue of Liberty", "A giraffe", "Mount Everest"], fact: "It's taller than the Statue of Liberty!" },
+    { q: "In Thunderhoof, how long do you have to stay on the bull?", a: ["8 seconds", "1 minute", "3 seconds"], fact: "Lean, grip and sit deep to last 8 seconds." },
+    { q: "How many bulls are in the Thunderhoof pen?", a: ["54", "5", "200"], fact: "54 bulls, and up to 5 players can ride." },
+    { q: "Who is the hero of my Halloween game?", a: ["A pumpkin", "A vampire", "A cat"], fact: "Pumpkin's Midnight Run, of course!" },
+    { q: "How many levels does Pumpkin's Midnight Run have?", a: ["20", "5", "99"], fact: "From the Pumpkin Patch to the Witching Hour." },
+    { q: "What should you wear for Hush Room?", a: ["Headphones", "Sunglasses", "A helmet"], fact: "Some sounds move around your head!" },
+    { q: "Which of my stats is a perfect 100?", a: ["Fry power", "Horror bravery", "Space knowledge"], fact: "Fries forever! 🍟" },
+  ]; // the first answer is the right one; answers get shuffled when shown
+
+  const RANKS = [
+    [1,    "🐍", "BEST FRIEND FOREVER!", "You know everything about me. Are you secretly me?"],
+    [0.8,  "🏆", "SUPER FAN!",            "Wow, you really know me!"],
+    [0.6,  "🎮", "GOOD PLAYER",           "Nice job! Read the page again to level up."],
+    [0.35, "🚀", "SPACE CADET",           "Not bad! You're getting there."],
+    [0,    "👻", "WHO ARE YOU?!",         "Scroll up, read about me, then try again!"],
   ];
-  let answered = 0, correct = 0;
-  document.getElementById("score").textContent = `ANSWER ALL ${QUIZ.length} QUESTIONS!`;
-  const box = document.getElementById("quiz-box");
-  QUIZ.forEach((item, qi) => {
-    const wrap = document.createElement("div");
-    wrap.className = "q";
-    wrap.innerHTML = `<p>${qi + 1}. ${item.q}</p><div class="opts"></div>`;
-    const opts = wrap.querySelector(".opts");
-    item.a.forEach((text, ai) => {
-      const btn = document.createElement("button");
-      btn.textContent = text;
-      btn.onclick = () => {
-        const buttons = opts.querySelectorAll("button");
-        buttons.forEach(b => b.disabled = true);
-        buttons[item.right].classList.add("right");
-        if (ai === item.right) correct++; else btn.classList.add("wrong");
-        answered++;
-        if (answered === QUIZ.length) {
-          const msg = correct === QUIZ.length ? "PERFECT! YOU KNOW ME!" : correct >= QUIZ.length * 0.75 ? "NICE JOB!" : "READ AGAIN & RETRY!";
-          document.getElementById("score").textContent = `SCORE: ${correct} / ${QUIZ.length} · ${msg}`;
-          if (correct === QUIZ.length) confetti();
-        } else {
-          document.getElementById("score").textContent = `SCORE: ${correct} / ${answered}`;
-        }
-      };
-      opts.appendChild(btn);
-    });
-    box.appendChild(wrap);
+  const shuffle = arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const quiz = document.getElementById("quiz-box");
+  let round, idx, correct, streak, bestStreak, points, locked;
+
+  // Little arcade beeps
+  let muted = false, actx;
+  try { muted = localStorage.getItem("quizMuted") === "1"; } catch (e) {}
+  function beep(notes) {
+    if (muted) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      notes.forEach(([f, t, d]) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = "square"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.06, actx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + t + d);
+        o.connect(g).connect(actx.destination);
+        o.start(actx.currentTime + t); o.stop(actx.currentTime + t + d);
+      });
+    } catch (e) {}
+  }
+  const sndRight = () => beep([[660, 0, .1], [990, .09, .16]]);
+  const sndWrong = () => beep([[220, 0, .18], [160, .15, .25]]);
+  const sndWin   = () => beep([[523, 0, .12], [659, .12, .12], [784, .24, .12], [1047, .36, .3]]);
+
+  function getBest() { try { return JSON.parse(localStorage.getItem("quizBest")) || {}; } catch (e) { return {}; } }
+  function setBest(b) { try { localStorage.setItem("quizBest", JSON.stringify(b)); } catch (e) {} }
+
+  function startScreen() {
+    const best = getBest();
+    quiz.innerHTML = `
+      <div class="center">
+        <div class="rank">🕹️</div>
+        <h3 class="pixel">QUIZ CHALLENGE</h3>
+        <p>Answer fast and keep your streak going for bonus points! Use the buttons or press 1, 2 or 3.</p>
+        <div class="buttons">
+          <button class="big-btn" data-n="10">QUICK · 10 ▶</button>
+          <button class="big-btn alt" data-n="${QUIZ.length}">ALL ${QUIZ.length} ▶</button>
+        </div>
+        ${best.points ? `<div class="best pixel">HIGH SCORE: ${best.points} PTS</div>` : ""}
+      </div>`;
+    quiz.querySelectorAll("[data-n]").forEach(b => b.onclick = () => start(+b.dataset.n));
+  }
+
+  function start(n) {
+    round = shuffle(QUIZ).slice(0, n);
+    idx = 0; correct = 0; streak = 0; bestStreak = 0; points = 0;
+    showQuestion();
+  }
+
+  function showQuestion() {
+    const item = round[idx];
+    locked = false;
+    item.order = shuffle(item.a);
+    quiz.innerHTML = `
+      <div class="hud pixel">
+        <span>Q ${idx + 1}/${round.length}</span>
+        <span class="streak">${streak >= 2 ? "🔥 x" + streak : ""}</span>
+        <span>${points} PTS <button class="mute" title="Sound on/off">${muted ? "🔇" : "🔊"}</button></span>
+      </div>
+      <div class="progress"><i style="width:${idx / round.length * 100}%"></i></div>
+      <p class="question">${item.q}</p>
+      <div class="opts">${item.order.map((t, i) => `<button data-i="${i}"><kbd>${i + 1}</kbd>${t}</button>`).join("")}</div>
+      <div class="feedback"></div>`;
+    quiz.querySelectorAll(".opts button").forEach(b => b.onclick = () => answer(+b.dataset.i));
+    quiz.querySelector(".mute").onclick = () => {
+      muted = !muted;
+      try { localStorage.setItem("quizMuted", muted ? "1" : "0"); } catch (e) {}
+      quiz.querySelector(".mute").textContent = muted ? "🔇" : "🔊";
+    };
+    item.shownAt = performance.now();
+  }
+
+  function answer(i) {
+    if (locked) return;
+    locked = true;
+    const item = round[idx];
+    const buttons = quiz.querySelectorAll(".opts button");
+    const rightIdx = item.order.indexOf(item.a[0]);
+    buttons.forEach(b => b.disabled = true);
+    buttons[rightIdx].classList.add("right");
+    const ok = i === rightIdx;
+    let gained = 0;
+    if (ok) {
+      correct++; streak++; bestStreak = Math.max(bestStreak, streak);
+      const secs = (performance.now() - item.shownAt) / 1000;
+      gained = 100 + Math.max(0, Math.round(50 - secs * 5)) + (streak - 1) * 20;
+      points += gained;
+      sndRight();
+      const r = buttons[i].getBoundingClientRect(), q = quiz.getBoundingClientRect();
+      const tag = document.createElement("span");
+      tag.className = "pts"; tag.textContent = "+" + gained;
+      tag.style.left = (r.right - q.left - 70) + "px"; tag.style.top = (r.top - q.top) + "px";
+      quiz.style.position = "relative"; quiz.appendChild(tag);
+    } else {
+      streak = 0;
+      buttons[i].classList.add("wrong");
+      sndWrong();
+    }
+    quiz.querySelector(".hud").innerHTML = `
+      <span>Q ${idx + 1}/${round.length}</span>
+      <span class="streak">${streak >= 2 ? "🔥 x" + streak : ""}</span>
+      <span>${points} PTS</span>`;
+    quiz.querySelector(".progress i").style.width = (idx + 1) / round.length * 100 + "%";
+    const last = idx === round.length - 1;
+    quiz.querySelector(".feedback").innerHTML = `
+      <p><b>${ok ? (streak >= 3 ? "ON FIRE! " : "CORRECT! ") : "OOPS! "}</b>${item.fact}</p>
+      <button class="big-btn">${last ? "RESULTS ▶" : "NEXT ▶"}</button>`;
+    const next = quiz.querySelector(".feedback .big-btn");
+    next.onclick = () => { idx++; last ? results() : showQuestion(); };
+    next.focus({ preventScroll: true });
+  }
+
+  function results() {
+    const pct = correct / round.length;
+    const [, emoji, title, line] = RANKS.find(r => pct >= r[0]);
+    const best = getBest();
+    const newBest = points > (best.points || 0);
+    if (newBest) setBest({ points });
+    quiz.innerHTML = `
+      <div class="center">
+        <div class="rank">${emoji}</div>
+        <h3 class="pixel">${title}</h3>
+        <p>${line}</p>
+        <p class="pixel" style="font-size:.7rem;line-height:2;color:var(--lime)">
+          SCORE ${correct}/${round.length} · ${points} PTS<br>BEST STREAK 🔥 ${bestStreak}
+        </p>
+        <div class="buttons">
+          <button class="big-btn" data-n="${round.length}">PLAY AGAIN ▶</button>
+          <button class="big-btn alt" id="quiz-menu">MENU</button>
+        </div>
+        <div class="best pixel">${newBest ? "🏅 NEW HIGH SCORE! 🏅" : "HIGH SCORE: " + best.points + " PTS"}</div>
+      </div>`;
+    quiz.querySelector("[data-n]").onclick = () => start(round.length);
+    quiz.querySelector("#quiz-menu").onclick = startScreen;
+    if (pct >= 0.8 || newBest) { sndWin(); confetti(); }
+  }
+
+  document.addEventListener("keydown", e => {
+    if (!quiz.querySelector(".opts") || e.target.closest("input, textarea")) return;
+    const r = quiz.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) return; // only when the quiz is on screen
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 3 && !locked) { answer(n - 1); e.preventDefault(); }
   });
+  startScreen();
 
   // Ball python slithering across the hero
   const svg = document.getElementById("snake");
