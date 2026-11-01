@@ -1,0 +1,2036 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lantern Wick</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;700&family=M+PLUS+1+Code:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a night walk — title on the hillside, a paper strip of readings, the 16:9 stage, field notes pinned beneath */
+:root{
+  --night:#0f0d1e;     /* page: indigo night */
+  --dusk:#1a1730;      /* raised panels */
+  --line:#2f2a4b;      /* hairlines */
+  --paper:#f2e6cf;     /* washi text */
+  --muted:#a59ec0;     /* labels */
+  --ember:#ff9a3c;     /* wick flame */
+  --fly:#dcf27e;       /* firefly glow */
+  --torii:#d0533a;     /* shrine red */
+  --display:"Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  --body:"Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+  --mono:"M PLUS 1 Code", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+html,body{background:var(--night)}
+body{color:var(--paper);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1000px;margin:0 auto;padding-inline:16px;padding-block:22px 56px;display:grid;gap:14px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 28px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,7vw,58px);line-height:1;margin:0;letter-spacing:.01em;text-wrap:balance}
+h1 span{color:var(--ember)}
+.tag{margin:0;color:var(--muted);font-size:14px;max-width:46ch}
+
+.hud{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;background:var(--dusk);border:1px solid var(--line);padding:10px 14px;border-radius:6px}
+.stat{display:grid;gap:2px;min-width:0}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.val{font-family:var(--mono);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.val.fly{color:var(--fly)}
+.wick{display:grid;gap:4px;min-width:150px;flex:1 1 160px;max-width:260px}
+.bar{height:10px;border-radius:5px;background:#0b0a16;border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:var(--w,100%);background:linear-gradient(90deg,#c2410c,var(--ember) 60%,#ffd27a);transition:width .12s linear}
+.wick.low .bar i{animation:pulse .5s ease-in-out infinite alternate}
+@keyframes pulse{to{opacity:.35}}
+.tools{margin-left:auto;display:flex;gap:6px}
+button{font-family:var(--mono);font-size:12px;letter-spacing:.04em;padding:7px 11px;background:transparent;color:var(--paper);border:1px solid var(--line);border-radius:4px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,canvas:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+button:disabled{opacity:.35;cursor:not-allowed}
+
+.stage{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:#06050e;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;width:100%;height:100%}
+.pad{position:absolute;inset:auto 0 0 0;display:flex;justify-content:space-between;align-items:flex-end;padding:10px;pointer-events:none}
+.pad .grp{display:flex;gap:10px;pointer-events:auto}
+.pad button{width:clamp(48px,13vw,64px);height:clamp(48px,13vw,64px);border-radius:50%;background:rgba(15,13,30,.55);border-color:rgba(242,230,207,.25);font-size:18px;display:grid;place-items:center;padding:0;touch-action:none}
+.pad button.jump{width:clamp(60px,17vw,80px);height:clamp(60px,17vw,80px);font-size:12px;color:var(--ember)}
+.pad button.on{background:rgba(255,154,60,.25)}
+
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px}
+.card{background:var(--dusk);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:grid;gap:10px;align-content:start;min-width:0}
+h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0;text-wrap:balance}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}
+dt{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;padding-top:2px}
+dd{margin:0;min-width:0}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 5px;background:var(--night);color:var(--paper)}
+.paths{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.paths button{width:100%;display:flex;justify-content:space-between;gap:10px;text-align:left;font-size:13px;padding:8px 10px}
+.paths button[aria-current="true"]{border-color:var(--ember)}
+.paths .best{color:var(--muted);font-variant-numeric:tabular-nums}
+.sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+@media (prefers-reduced-motion: reduce){.wick.low .bar i{animation:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Lantern <span>Wick</span></h1>
+    <p class="tag">A paper lantern walks home through the hills at night. Its wick burns down as it goes. Fireflies feed the flame, and stone lanterns keep it.</p>
+  </header>
+
+  <section class="hud" aria-label="Status">
+    <div class="stat"><span class="lbl">Path</span><span class="val" id="hLevel">1 · The Lower Path</span></div>
+    <div class="wick" id="hWick"><span class="lbl">Wick <span id="hWickPct">100%</span></span><div class="bar"><i id="hBar"></i></div></div>
+    <div class="stat"><span class="lbl">Fireflies</span><span class="val fly" id="hFlies">0</span></div>
+    <div class="stat"><span class="lbl">Snuffed</span><span class="val" id="hDeaths">0</span></div>
+    <div class="stat"><span class="lbl">Time</span><span class="val" id="hTime">0:00.0</span></div>
+    <div class="tools">
+      <button id="bRestart" type="button" title="Restart this path (R)">Restart</button>
+      <button id="bSound" type="button" aria-pressed="true" title="Sound (M)">Sound on</button>
+    </div>
+  </section>
+
+  <div class="stage" id="stage">
+    <canvas id="game" tabindex="0" aria-label="Lantern Wick game. Arrow keys to move, Space to jump."></canvas>
+    <div class="pad" id="pad" hidden>
+      <div class="grp">
+        <button type="button" data-k="left" aria-label="Move left">◀</button>
+        <button type="button" data-k="right" aria-label="Move right">▶</button>
+      </div>
+      <div class="grp">
+        <button type="button" data-k="down" aria-label="Drop through plank">▼</button>
+        <button type="button" data-k="jump" class="jump" aria-label="Jump">JUMP</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="notes">
+    <div class="card">
+      <h2>How to walk</h2>
+      <dl>
+        <dt>Move</dt><dd><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd></dd>
+        <dt>Jump</dt><dd><kbd>Space</kbd>, <kbd>↑</kbd> or <kbd>W</kbd>. Hold for a higher jump.</dd>
+        <dt>Wall jump</dt><dd>Jump while touching a wall. Hold toward it to slide slowly.</dd>
+        <dt>Drop</dt><dd><kbd>↓</kbd> on a wooden plank to fall through.</dd>
+        <dt>Other</dt><dd><kbd>R</kbd> restart path · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Field notes</h2>
+      <dl>
+        <dt><span class="sw" style="background:#8a8499"></span>Tōrō</dt><dd>Stone lantern. Lights your checkpoint and refills the wick.</dd>
+        <dt><span class="sw" style="background:var(--fly)"></span>Firefly</dt><dd>+30% wick. Another drifts back after 7 seconds.</dd>
+        <dt><span class="sw" style="background:#9fdcff"></span>Spirit stone</dt><dd>Only shows inside your light. Solid all the same.</dd>
+        <dt><span class="sw" style="background:#8a6e4c"></span>Sandstone</dt><dd>Gives way 0.4 s after you step on it.</dd>
+        <dt><span class="sw" style="background:#a63d2c"></span>Taiko drum</dt><dd>Land on it to bounce about eight tiles high.</dd>
+        <dt><span class="sw" style="background:#f1dfb8;box-shadow:inset 0 0 0 2px #8a4a2a"></span>Shoji</dt><dd>Sun and moon screens swap every 1.6 s. Only one set is solid at a time; they flicker just before.</dd>
+        <dt><span class="sw" style="background:#d8a64a"></span>Temple bell</dt><dd>Ring it to open every wooden gate on that path. It stays rung if you are snuffed.</dd>
+        <dt><span class="sw" style="background:#dfe8f2"></span>Onsen steam</dt><dd>Rising steam lifts the lantern. Drift sideways to step off at the top.</dd>
+        <dt><span class="sw" style="background:var(--torii)"></span>Torii</dt><dd>The end of each path.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Paths</h2>
+      <ol class="paths" id="paths"></ol>
+    </div>
+  </section>
+</div>
+
+<script>
+const LEVELS = [
+ {
+  "name": "The Lower Path",
+  "drain": 3.0,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                      f                 f                           f",
+   "",
+   "               f",
+   "                      ##         f    ====            f           =====",
+   "                    #####",
+   "  P         L     #########                 ^^^           L    ^^       G",
+   "######   #######################   ##################   ####################",
+   "######   #######################   ##################   ####################",
+   "######   #######################   ##################   ####################"
+  ]
+ },
+ {
+  "name": "Ghost Steps",
+  "drain": 3.6,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                 f",
+   "                                    ##                 f",
+   "                                    ##",
+   "                                    ## f    L   ^^^",
+   "                                    ##   ####################",
+   "                                    ##   ####################",
+   "                                    ##   ####################",
+   "                                    ##   ####################",
+   "                                    ## f ####################",
+   "                  f                 ##   ####################",
+   "             f        f             ##   ####################                   f",
+   "                                f        ####################         f",
+   "                 ~~                      ####################",
+   "  P   L      ~~      ~~     L            ####################^^^^          L   ^^^    G",
+   "###########              #################################################################",
+   "###########              #################################################################",
+   "###########              #################################################################"
+  ]
+ },
+ {
+  "name": "Crumbling Bridge",
+  "drain": 4.0,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                                     f",
+   "",
+   "",
+   "                                                                 L  ^^^   ^^",
+   "                                                           f   ##################",
+   "                                                               ##################     f",
+   "                                   f                           ##################",
+   "                                                    f          ##################",
+   "                         f                                V    ##################   ====",
+   "                                CC   CC    L    ^^             ##################",
+   "               f                         ###############       ##################",
+   "                         M               ###############       ##################",
+   "                                         ###############       ##################",
+   "          CCCCCCCCCCC                    ###############       ##################",
+   "  P  L                                   ###############       ##################^^^^^^         G",
+   "#########                                ###############       #####################################",
+   "#########                                ###############       #####################################",
+   "#########                                ###############       #####################################"
+  ]
+ },
+ {
+  "name": "The Long Dark",
+  "drain": 4.6,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                        f",
+   "                                    ##                            f",
+   "                                    ##       L      ^^",
+   "                                    ##   ####################CCCCCCCCCC",
+   "                                    ##   ####################",
+   "                                    ## f ##",
+   "                                    ##   ##",
+   "                                    ##   ##                                     f",
+   "                     f                   ##",
+   "                                         ##                                 L",
+   "                          L   ^^       f ##                               ~~~~~~~~~~~",
+   "                    ~~~ ##############   ##",
+   "             f          ##############   ##",
+   "                ~~~                      ##",
+   "                                         ##",
+   "            ~~~                          ##",
+   "                                         ##                                                    f",
+   "        ~~~",
+   "  P L                                                                                ^^^^               G",
+   "#######                                                                              #########################",
+   "#######                                                                              #########################",
+   "#######                                                                              #########################"
+  ]
+ },
+ {
+  "name": "Firefly Marsh",
+  "drain": 4.8,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                                            f",
+   "",
+   "                                                                f                     f",
+   "                                                f                   ###  CCCCCCCC",
+   "                                                                    ###",
+   "                                         f                          ###             ====",
+   "               f                f              ~~~                  ###",
+   "                                                               V    ###",
+   "                         f              ====           L            ###",
+   "                 ====                                ########       ###",
+   "                               M                     ########       ###                             f",
+   "          ====          ====                         ########       ###",
+   "  P  L                                               ########       ###                    ^^^   L       G",
+   "########                                             ########       ###                    ###################",
+   "########                                             ########       ###                    ###################",
+   "########                                             ########       ###                    ###################"
+  ]
+ },
+ {
+  "name": "Twin Chimneys",
+  "drain": 5.0,
+  "map": [
+   "",
+   "",
+   "",
+   "                               f",
+   "                      L    ^^                                           f",
+   "                   ################",
+   "                   ################                       ##       L",
+   "              ##   ##                                     ##   #############",
+   "              ##   ##                  f                  ##   #############",
+   "              ## f ##                                     ##   ##                f",
+   "              ##   ##                                     ## f ##",
+   "              ##   ##                CCCC                 ##   ##",
+   "              ##   ##                        f            ##   ##              ====",
+   "              ##   ##                                     ##   ##                      f",
+   "              ##   ##                                     ##   ##",
+   "              ## f ##                       ~~~           ##   ##",
+   "              ##   ##                                 f        ##                    ====",
+   "              ##   ##                                        f ##",
+   "          f   ##   ##                              L           ##",
+   "                   ##                            ###########   ##",
+   "                   ##                            ###########   ##",
+   "  P   L            ##                            ###########   ##                               G",
+   "#####################                            ###########   ##                          #########",
+   "#####################                            ###########   ##                          #########",
+   "#####################                            ###########   ##                          #########"
+  ]
+ },
+ {
+  "name": "Sandstone Stair",
+  "drain": 5.3,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                                                                 f",
+   "",
+   "                                                                                   f",
+   "                                                                                        L    ^^     G",
+   "                                                                                      ###################",
+   "                                                                                      ###################",
+   "                        f       f       f           f              f    f             ###################",
+   "                                                                                      ###################",
+   "                              L                                                   V   ###################",
+   "                       CCC  #######    M       CCCCCCCCCCCC      ~~  ~~  ~~   f       ###################",
+   "              f             #######                                                   ###################",
+   "                  CCC                                         L ^^^^^^^^^^^^          ###################",
+   "                                                             ####################     ###################",
+   "             CCC                                             ####################     ###################",
+   "                                                             ####################     ###################",
+   "        CCC                                                  ####################     ###################",
+   "  P L                                                        ####################     ###################",
+   "#######                                                      ####################     ###################",
+   "#######                                                      ####################     ###################",
+   "#######                                                      ####################     ###################"
+  ]
+ },
+ {
+  "name": "Last Light",
+  "drain": 5.6,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                                                                                      f",
+   "",
+   "                                                       f       f",
+   "                                     ##                                                                  f       ^^^         G",
+   "                                     ##      L     ^^                   f                                   ######################",
+   "                                     ##   #################CCCCCCCC                                         ######################",
+   "                                     ## f #################                      f                          ######################",
+   "                                     ##   ##                           M                                    ######################",
+   "                                     ##   ##                                             f              V   ######################",
+   "                                     ##   ##                                    ===                         ######################",
+   "                          f               ##                                                                ######################",
+   "                                          ##                                          ~~   ~~    L          ######################",
+   "              f       f       L  ^^     f ##                                                   #######      ######################",
+   "                         ~~  ##########   ##                                                   #######      ######################",
+   "                             ##########   ##                                                   #######      ######################",
+   "             ~~      ~~                   ##                                                   #######      ######################",
+   "                                          ##                                                   #######      ######################",
+   "         ~~      ~~                       ##                                                   #######      ######################",
+   "  P L                                     ##                                                   #######      ######################",
+   "#######                                                                                        #######      ######################",
+   "#######                                                                                        #######      ######################",
+   "#######                                                                                        #######      ######################"
+  ]
+ },
+ {
+  "name": "Moonlit Terraces",
+  "drain": 5.0,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "                                             f       f",
+   "",
+   "",
+   "                                        f   ===  CCCCCCCC",
+   "                                                             L",
+   "                                                            ###",
+   "                        f         f    ===                  ###",
+   "                                                            ### f",
+   "                              L                             ###",
+   "                            #########                       ###   ~~",
+   "                            #########                       ###       f",
+   "                       V    #########                       ###               f                          f",
+   "                f           #########                       ###",
+   "                            #########                       ###        ~~",
+   "                            #########                       ###              M                        =======",
+   "            #########       #########                       ###                                f               f",
+   "            #########       #########                       ###",
+   "  P  L      #########       #########                       ###                       ^^^   L   ^^      ^^^        G",
+   "#########   #########       #########                       ###                       ##################################",
+   "#########   #########       #########                       ###                       ##################################",
+   "#########   #########       #########                       ###                       ##################################"
+  ]
+ },
+ {
+  "name": "Hollow Well",
+  "drain": 5.4,
+  "map": [
+   "",
+   "",
+   "",
+   "                            f                                           f",
+   "               ##                                             L    ^^",
+   "               ## f    L                                   #################",
+   "               ##   ###########                            #################",
+   "               ##   ###########   f                   ##   ##",
+   "               ##   ##                                ##   ##",
+   "               ##   ##                                ##   ##                  f",
+   "               ## f ##           CCC   f              ##   ##",
+   "               ##   ##                                ## f ##",
+   "               ##   ##                                ##   ##                 ===",
+   "               ##   ##                CCC   f         ##   ##",
+   "               ##   ##                                ##   ##",
+   "               ##   ##                                ##   ##",
+   "               ## f ##                     CCC      f ##   ##",
+   "               ##   ##                                   f ##",
+   "               ##   ##                            L        ##",
+   "          f    ##   ##                          ########   ##                      f",
+   "                    ##                          ########   ##",
+   "  P  L              ##                          ########   ##                        G",
+   "######################                          ########   ##                  ###########",
+   "######################                          ########   ##                  ###########",
+   "######################                          ########   ##                  ###########"
+  ]
+ },
+ {
+  "name": "Lantern Festival",
+  "drain": 6.0,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                    f        f    f   f",
+   "                                           f                                f",
+   "                                                 L   ^^",
+   "                                               ##########  ~~  CCC  ~~  CCC     f",
+   "                                      f        ##########",
+   "",
+   "                                                                             ====",
+   "                                          V",
+   "                   f",
+   "            f                        V",
+   "                         f",
+   "                M              L                                                              f         f         f",
+   "                             ######                                                                                     f",
+   "          M           M      ######",
+   "  P L                        ######                                                 ^^^  L   ^^^   L   ^^^   L   ^^^        G",
+   "#######                      ######                                                 ##############################################",
+   "#######                      ######                                                 ##############################################",
+   "#######                      ######                                                 ##############################################"
+  ]
+ },
+ {
+  "name": "Dawn Gate",
+  "drain": 6.2,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                                                                                                f",
+   "                                                                                f     f",
+   "                                                  f                                                           ##",
+   "                                 ##                                f    L                                     ##      L   ^^^         G",
+   "                                 ##      L    ^^          f            ###  CCCCCCCCCCCC    f                 ## f #########################",
+   "                                 ## f ###############                  ###                                    ##   #########################",
+   "                                 ##   ###############                  ###                                    ##   ##",
+   "                                 ##   ##                 M             ###                 ~~     f           ##   ##",
+   "                                 ##   ##                               ###                                    ##   ##",
+   "                                 ##   ##                          V    ###                                    ##   ##",
+   "                    f          f      ##                               ###                      ====        f    f ##",
+   "                                    f ##                               ###                                         ##",
+   "                f        L  ^^        ##                               ###                               L         ##",
+   "                   ~~  ############   ##                               ###                             #########   ##",
+   "           f           ############   ##                               ###                             #########   ##",
+   "               ~~                     ##                               ###                             #########   ##",
+   "                                      ##                               ###                             #########   ##",
+   "         CCCC                         ##                               ###                             #########   ##",
+   "  P L                                 ##                               ###                             #########   ##",
+   "#######                                                                ###                             #########   ##",
+   "#######                                                                ###                             #########   ##",
+   "#######                                                                ###                             #########   ##"
+  ]
+ },
+ {
+  "name": "Bamboo Grove",
+  "drain": 5.6,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                  f",
+   "",
+   "",
+   "                  f                         f   ====  f             f    f",
+   "",
+   "                                                                                        f",
+   "           f    =====    f            f   =====      ==       f   CCCC  ~~    f                  f",
+   "",
+   "",
+   "        =======       ======       ======                   =====           ====       M       ====",
+   "",
+   "  P  L    ^^^^^^^^^^^^^^^^^^^^ L ^^^^^^^^^^^^^^^^^^^^^^^ L ^^^^^^^^^^^^^^^^^^^^^^ L ^^^^^^^^^^^^^^^^^     G",
+   "##############################################################################################################",
+   "##############################################################################################################",
+   "##############################################################################################################"
+  ]
+ },
+ {
+  "name": "Echo Cave",
+  "drain": 5.8,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                                           f       f       f",
+   "",
+   "                                                                 L    ^^^             ^^       G",
+   "############################################################   ##############~~~####################",
+   "############################################################   ##############   ####################",
+   "############################################################ f ##############   ####################",
+   "############################################################   ##############   ####################",
+   "############################################################   ##############   ####################",
+   "############################################################   ##############   ####################",
+   "############################################################ f ##############   ####################",
+   "############################################################   ##############   ####################",
+   "############################################################   ##############   ####################",
+   "                          #####",
+   "                          #####                              f",
+   "                          #####",
+   "                  f                         f        f",
+   "          f                 f       f                    ========",
+   "",
+   "  P  L           ~~~   L   ^^^           CCCCCC   L    ^^",
+   "################     ####################      ########################",
+   "################     ####################      ########################",
+   "################     ####################      ########################"
+  ]
+ },
+ {
+  "name": "Spirit Ladder",
+  "drain": 6.0,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "                     f       f",
+   "                                                                   f     f",
+   "                          L",
+   "                 f  ~~  #######   f",
+   "                        #######                                f  ~~  CCCCCC   f",
+   "                                                          f",
+   "            f   ~~               ~~   f                                                               f",
+   "                                                              ~~              ~~   f",
+   "",
+   "            ~~ f                     ~~   f                                                        =======",
+   "                                                                                  ~~                         f",
+   "                                                         V",
+   "           f   ~~                        ~~   f                                         L    ^^^     ^^^          G",
+   "                                                                                      ##################################",
+   "                                                   L                                  ##################################",
+   "           ~~                                ~~  ######                               ##################################",
+   "                                                 ######                               ##################################",
+   "  P  L                                           ######                               ##################################",
+   "#########                                        ######                               ##################################",
+   "#########                                        ######                               ##################################",
+   "#########                                        ######                               ##################################"
+  ]
+ },
+ {
+  "name": "Morning Star",
+  "drain": 6.4,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                                                                                                 f         f",
+   "",
+   "                                                      f      f   f        L                                          L     ^^^       ^^^        G",
+   "                                     ##                                  ###                                      ####################################",
+   "                                     ##      L    ^^                 f   ###    f                            ##   ####################################",
+   "                                     ## f ###############  ~~  ~~        ###                                 ##   ##",
+   "                                     ##   ###############                ###                                 ## f ##",
+   "                                     ##   ##                             ###   ====     f                    ##   ##",
+   "                                     ##   ##                        V    ###                                 ##   ##",
+   "                                     ##   ##                             ###                                 ##   ##",
+   "                        f       f         ##                             ###          CCCCCC     f           ##   ##",
+   "                                        f ##                             ###                                 ##   ##",
+   "                  f           L  ^^       ##                             ###                               f ## f ##",
+   "            f         CCCC  ###########   ##                             ###                   ====               ##",
+   "                            ###########   ##                             ###                            L         ##",
+   "                M                         ##                             ###                          #########   ##",
+   "                                          ##                             ###                          #########   ##",
+   "          M                               ##                             ###                          #########   ##",
+   "  P L                                     ##                             ###                          #########   ##",
+   "#######                                                                  ###                          #########   ##",
+   "#######                                                                  ###                          #########   ##",
+   "#######                                                                  ###                          #########   ##"
+  ]
+ },
+ {
+  "name": "River Lanterns",
+  "drain": 5.8,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                                                 f",
+   "                                                                     f     f",
+   "                                                                f                                f       f      f",
+   "",
+   "                                                                    ~~  CCCCCC         L    ^^^     ^^^     ^^     G",
+   "                        f      f      f                                              ###################################",
+   "                                                                                V    ###################################",
+   "                  f                         f                                        ###################################",
+   "                      M      ====   M                     f    V                     ###################################",
+   "            f                                     f                                  ###################################",
+   "                M                         M                                          ###################################",
+   "                                                         L                           ###################################",
+   "          M                                     M      ######                        ###################################",
+   "  P L                                                  ######                        ###################################",
+   "#######                                                ######                        ###################################",
+   "#######                                                ######                        ###################################",
+   "#######                                                ######                        ###################################"
+  ]
+ },
+ {
+  "name": "Thousand Gates",
+  "drain": 6.0,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                                                                f",
+   "                                                                                        f",
+   "                                                                       f     f            L",
+   "                                                                                   f      ##   CCC",
+   "                                                              f          ##               ##",
+   "                                                                         ##          ~~   ##",
+   "                                                                   ##    ##               ##",
+   "                                                                   ##    ##    ##         ##",
+   "                                 f             f                   ##    ##    ##         ##",
+   "                    f                  f                           ##    ##    ##         ##",
+   "                          f        ~~              ##        V     ##    ##    ##         ##",
+   "              f ##           L                CC   ##              ##    ##    ##         ##",
+   "                ##           ##          ##        ##    f         ##    ##    ##         ##",
+   "          ##    ##    ##     ##          ##        ##              ##    ##    ##         ##                   f",
+   "          ##    ##    ##     ##          ##        ##              ##    ##    ##         ##",
+   "  P  L    ##^^^^##^^^^##^^^^^##^^^^^^^^^^##^^^^^^^^##  L           ##    ##    ##         ##         ^^^^   L     G",
+   "###########################################################        ##    ##    ##         ##         ###################",
+   "###########################################################        ##    ##    ##         ##         ###################",
+   "###########################################################        ##    ##    ##         ##         ###################"
+  ]
+ },
+ {
+  "name": "Quiet Fields",
+  "drain": 4.5,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                     f                              f",
+   "                                                                                              f",
+   "",
+   "                                   ======",
+   "                                                                 M                           ~~~",
+   "  P L                 ^^^                     ^^^   ^^   L                   ^^^     ^^                  G",
+   "#############    ##############          ####################           ###################       ############",
+   "#############    ##############          ####################           ###################       ############",
+   "#############    ##############          ####################           ###################       ############"
+  ]
+ },
+ {
+  "name": "The Last Torii",
+  "drain": 6.6,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                                              f",
+   "                                                            ##      L    ^^^",
+   "                                                            ##   ################    f",
+   "                                                            ## f ################                                                                f",
+   "               f         f                                  ##   ##",
+   "                                 f     f       f            ##   ##                                                           ##      L     ^^^      ^^    G",
+   "                    L  ^^                                   ##   ##                 V                                         ##   #############################",
+   "           f  ~~  #########                                 ##   ##                        f                                  ##   #############################",
+   "                  #########   M      ====  CCCCCCCC         ## f ##                                                           ## f ##",
+   "                                                          f ##   ##                                     ###################   ##   ##",
+   "          ~~  f                                                  ##                       ~~    f       ###################   ##   ##",
+   "                                                       L         ##                                     ###################   ##   ##",
+   "                                                     #########   ##                                                           ##   ##",
+   "          f  ~~                                      #########   ##                            ~~                f       f       f ##",
+   "                                                     #########   ##                                                                ##",
+   "                                                     #########   ##                                  L      ^^^     ^^^            ##",
+   "         ~~                                          #########   ##                                #############################   ##",
+   "                                                     #########   ##                                #############################   ##",
+   "  P L                                                #########   ##                                #############################   ##",
+   "#######                                              #########   ##                                #############################   ##",
+   "#######                                              #########   ##                                #############################   ##",
+   "#######                                              #########   ##                                #############################   ##"
+  ]
+ },
+ {
+  "name": "Drum Hill",
+  "drain": 5.4,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                     f",
+   "",
+   "                  f               L",
+   "                                #########",
+   "              L             f   #########",
+   "            ###########",
+   "          f ###########  f                       f     f     f     f     f     f",
+   "",
+   "",
+   "",
+   "                            S                                                             f",
+   "                           ###",
+   "  P  L    S                ###              ^^S^^^^^S^^^^^S^^^^^S^^^^^S^^^^^S^^^^   L          G",
+   "###############            ###              ########################################################",
+   "###############            ###              ########################################################",
+   "###############            ###              ########################################################"
+  ]
+ },
+ {
+  "name": "Festival Drums",
+  "drain": 5.8,
+  "map": [
+   "",
+   "",
+   "",
+   "                                    f",
+   "                                 L   ^^",
+   "                            f  ##########",
+   "                               ##########    f",
+   "",
+   "                                                               f                  f         f         f",
+   "                          f                 ====                      f",
+   "                                                    f",
+   "               f        L   S                                =====",
+   "                      #######                            f                                                     f",
+   "                      #######                      ~~                V",
+   "            CCCCCCC                                                         L S^^^^^^   S^^^^^^   S^^^^^^ L        G",
+   "         f                                                                ##############################################",
+   "                                                                          ##############################################",
+   "                                                         S                ##############################################",
+   "                                                        ###               ##############################################",
+   "                                                        ###               ##############################################",
+   "                                                        ###               ##############################################",
+   "  P L    S                                              ###               ##############################################",
+   "###########                                             ###               ##############################################",
+   "###########                                             ###               ##############################################",
+   "###########                                             ###               ##############################################"
+  ]
+ },
+ {
+  "name": "Sky Lanterns",
+  "drain": 6.0,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                                                                    f",
+   "                               f",
+   "                  f                                                     f     f            L    ^^^   ^^  G",
+   "                                                                                         #####################",
+   "                             ====                              f                         #####################",
+   "                 L                                                     ~~  CCCCCC    f   #####################",
+   "               ######    f                              f                                #####################",
+   "               ######                     f                   ~~   f                     #####################",
+   "          f                         f           f                                        #####################",
+   "                                                       L                                 #####################",
+   "                                                     ######                          S   #####################",
+   "                         S                           ######                         ###  #####################",
+   "                        ###               S          ######        S                     #####################",
+   "          S                         S    ###    S    ######       ###                    #####################",
+   "         ###                       ###         ###   ######                              #####################",
+   "  P L                                                ######                              #####################",
+   "#######                                              ######                              #####################",
+   "#######                                              ######                              #####################",
+   "#######                                              ######                              #####################"
+  ]
+ },
+ {
+  "name": "Thunder of Dawn",
+  "drain": 6.6,
+  "map": [
+   "",
+   "",
+   "",
+   "                                        f",
+   "                       ##                                                                                f",
+   "                       ##      L    ^^",
+   "                       ##   ###############               f      f                  ##      L     ^^^",
+   "                       ## f ###############                                         ##   ######################",
+   "                       ##   ##                                           f          ## f ######################",
+   "                       ##   ##                       f    ~~  CCCCCCC               ##   ##",
+   "                       ##   ##                 f                                    ##   ##",
+   "                 f          ##                                                      ##   ##",
+   "                          f ##                                          V           ##   ##",
+   "               L   ^^       ##                                                      ##   ##",
+   "             ############   ##                       S                            f    f ##",
+   "         f   ############   ##                 S    ###                                  ##                            f     f     f     f",
+   "                            ##                ###                              L         ##",
+   "                            ##                                               #########   ##",
+   "                            ##                                               #########   ##",
+   "                            ##                                               #########   ##",
+   "                                                                             #########   ##",
+   "  P L    S                                                                   #########   ##                       ^^S^^^^^S^^^^^S^^^^^S^^^^^   L  G",
+   "#############                                                                #########   ##                       ####################################",
+   "#############                                                                #########   ##                       ####################################",
+   "#############                                                                #########   ##                       ####################################"
+  ]
+ },
+ {
+  "name": "Shoji Hall",
+  "drain": 5.4,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                                          f               f",
+   "",
+   "                                                                                L    ^^^       G",
+   "                                                                     f   BBB  ######################",
+   "                                                                              ######################",
+   "                                                                              ######################",
+   "                                                A    B          f   AAA       ######################",
+   "              f     f     f     f     f         A    B                        ######################",
+   "                                                A    B                        ######################",
+   "                                                A f  B         BBB            ######################",
+   "            AAAA  BBBB  AAAA  BBBB  AAAA        A    B                        ######################",
+   "  P  L                                     L    A    B                        ######################",
+   "###########                              ####################                 ######################",
+   "###########                              ####################                 ######################",
+   "###########                              ####################                 ######################"
+  ]
+ },
+ {
+  "name": "Tide of Paper",
+  "drain": 5.8,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                 f      f      f         f",
+   "                                                         A f                                     f",
+   "                                      L                  A",
+   "               AAAAA  BBBBB  AAAAA  #########         L  A                              L   ^^^     ^^^   G",
+   "                                    #########       #########                         ########################",
+   "                                                    #########   f           f         ########################",
+   "            f                                   f                                 f   ########################",
+   "                                                                      f               ########################",
+   "                                                               BBBB        BBBB       ########################",
+   "                                                                                      ########################",
+   "                                                                     AAAA             ########################",
+   "            S                                   S                                 S   ########################",
+   "           ###                                 ###                               ###  ########################",
+   "  P L                                                                                 ########################",
+   "#########                                                                             ########################",
+   "#########                                                                             ########################",
+   "#########                                                                             ########################"
+  ]
+ },
+ {
+  "name": "Clockwork Shrine",
+  "drain": 6.0,
+  "map": [
+   "",
+   "",
+   "",
+   "                                          f",
+   "                               L     ^^",
+   "                    #   f   ##################",
+   "                    #       ##################    f",
+   "                    #AAA    ##",
+   "                    #       ##",
+   "                    #       ##                   AAAA   f",
+   "                    #    BBB##",
+   "                    #   f   ##",
+   "                    #       ##                         BBBB   f",
+   "                    #AAA    ##                                                  A    f B    f A",
+   "                    #       ##                                            f     A      B      A      f",
+   "                    #       ##                               AAAA               A      B      A",
+   "                    #    BBB##                                       L          A ^^^  B ^^^  A  L       G",
+   "                    #   f   ##                                     ###########################################",
+   "                    #       ##                                     ###########################################",
+   "            f       #AAA    ##                                     ###########################################",
+   "                            ##                                     ###########################################",
+   "  P  L                      ##                                     ###########################################",
+   "##############################                                     ###########################################",
+   "##############################                                     ###########################################",
+   "##############################                                     ###########################################"
+  ]
+ },
+ {
+  "name": "Hour of the Ox",
+  "drain": 6.6,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                                                    f     f       f",
+   "",
+   "                                                  f",
+   "                                 ##                                BBBB  AAAA  CCCCCC    f",
+   "                                 ##      L    ^^                                                                       f",
+   "                                 ## f ###############          f",
+   "                                 ##   ###############    f                              V",
+   "                                 ##   ##                                                                 A      B             A",
+   "                                 ##   ##                                                            f    A    f B             A    f      f",
+   "                                 ##   ##                                                                 A      B             A",
+   "                             f        ##                       S                               L         A ^^^  B   S^^^^^^   A  L   ^^^    ^^    G",
+   "                                    f ##                 S    ###                            #########################################################",
+   "          f    f    f     L   ^^      ##                ###                                  #########################################################",
+   "                        ###########   ##                                                     #########################################################",
+   "                        ###########   ##                                                     #########################################################",
+   "         AAA  BBB  AAA                ##                                                     #########################################################",
+   "  P L                                 ##                                                     #########################################################",
+   "#######                               ##                                                     #########################################################",
+   "#######                               ##                                                     #########################################################",
+   "#######                                                                                      #########################################################"
+  ]
+ },
+ {
+  "name": "Bell Tower",
+  "drain": 5.4,
+  "map": [
+   "",
+   "",
+   "",
+   "                                        D",
+   "                                        D",
+   "                                        D",
+   "                                        D",
+   "                              f         D",
+   "                                        D",
+   "                           b            D",
+   "                      f  ====           D",
+   "                                        D",
+   "                                        D",
+   "                 f  ====                D",
+   "                                        D",
+   "                                        D",
+   "            f  ====                     D",
+   "                                        D                      f",
+   "                                        D",
+   "          ====                        f D         f                              f        f",
+   "                                        D                    CCCCCC",
+   "  P  L                             L    D    ^^^    ^^                L     ^^^     ^^^        G",
+   "#############################################################      #################################",
+   "#############################################################      #################################",
+   "#############################################################      #################################"
+  ]
+ },
+ {
+  "name": "Temple Gate",
+  "drain": 5.6,
+  "map": [
+   "",
+   "",
+   "",
+   "                            DD",
+   "                            DD",
+   "                            DD",
+   "                            DD",
+   "                            DD",
+   "                        f   DD",
+   "                 f          DD",
+   "                            DD",
+   "                            DD",
+   "                  ^^ CCC b  DD",
+   "              ############# DD",
+   "              ############# DD",
+   "            f               DD                                    f         f           f",
+   "                            DD",
+   "                            DD               f     f     f     L      ^^^       ^^^            G",
+   "                            DD                               #######################################",
+   "        f                   DD      f                        #######################################",
+   "                            DD             AAAA  BBBB  AAAA  #######################################",
+   "  P L       S               DD   L                           #######################################",
+   "#########################################                    #######################################",
+   "#########################################                    #######################################",
+   "#########################################                    #######################################"
+  ]
+ },
+ {
+  "name": "Bell in the Well",
+  "drain": 5.8,
+  "map": [
+   "",
+   "",
+   "",
+   "                        D                                                        f         f",
+   "                        D                                  ##",
+   "                        D                                  ##       L     ^^^         ^^       G",
+   "                        D                                  ## f ####################################",
+   "                        D                                  ##   ####################################",
+   "                        D                                  ##   ##",
+   "                        D                                  ##   ##",
+   "                        D                                  ##   ##",
+   "       f            f   D   f      f   f               f      f ##",
+   "                        D                                       ##",
+   "  P L                   D                    L    ^^            ##",
+   "#########        ##############CCCCCCCCCC  ##################   ##",
+   "#########        ##############            ##################   ##",
+   "#########      f ##############            ##################   ##",
+   "#########        ##############            ##################   ##",
+   "#########        ##############            ##################   ##",
+   "#########  f     ##############            ##################   ##",
+   "#########        ##############            ##################",
+   "#########   b  S ##############            ##################",
+   "###############################            ##################",
+   "###############################            ##################",
+   "###############################            ##################"
+  ]
+ },
+ {
+  "name": "Great Bell of Dawn",
+  "drain": 6.6,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                                              f                                             D",
+   "                                                   f        ##      L    ^^^                                                D",
+   "                                                            ##   ################    f                                      D",
+   "                                                            ## f ################                                           D                    f",
+   "               f         f                      b           ##   ##                                                         D",
+   "                                 f     f       f###         ##   ##                                                         D ##      L     ^^^      ^^    G",
+   "                    L  ^^                                 f ##   ##                 V                                       D ##   #############################",
+   "           f  ~~  #########                                 ##   ##                        f                                D ##   #############################",
+   "                  #########   M      ====  CCCCCCCC         ## f ##                                                         D ## f ##",
+   "                                                            ##   ##                                     ################### D ##   ##",
+   "          ~~  f                                                  ##                       ~~    f       ################### D ##   ##",
+   "                                                      SL         ##                                     ################### D ##   ##",
+   "                                                     #########   ##                                                         D ##   ##",
+   "          f  ~~                                      #########   ##                            ~~                f       f  D    f ##",
+   "                                                     #########   ##                                                         D      ##",
+   "                                                     #########   ##                                  L      ^^^     ^^^     D      ##",
+   "         ~~                                          #########   ##                                #############################   ##",
+   "                                                     #########   ##                                #############################   ##",
+   "  P L                                                #########   ##                                #############################   ##",
+   "#######                                              #########   ##                                #############################   ##",
+   "#######                                              #########   ##                                #############################   ##",
+   "#######                                              #########   ##                                #############################   ##"
+  ]
+ },
+ {
+  "name": "Hot Spring Valley",
+  "drain": 5.8,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                             f",
+   "                                www",
+   "                                www  L    ^^               www",
+   "                                www##############          www    f",
+   "                      f         www##############          www          G",
+   "          ww                    www##############          www###############",
+   "          ww  L    ^^           wfw                        www###############",
+   "          ww################    www                        wfw###############",
+   "          ww################    www                        www###############",
+   "          wf################    www                        www###############",
+   "          ww################    www                        www###############",
+   "          ww################    www                        www###############",
+   "       f  ww################    www                  f     www###############",
+   "          ww################    www                        www###############",
+   "  P  L    ww################    www                     L  www###############",
+   "############################    www              ############################",
+   "############################    www              ############################",
+   "############################    www              ############################"
+  ]
+ },
+ {
+  "name": "Kettle Smoke",
+  "drain": 6.0,
+  "map": [
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "                                            www       f",
+   "                                            www",
+   "                                            www    ^^",
+   "                                            www##########",
+   "                            www             www##########",
+   "                            www             wfw##########",
+   "                            www  L          www##########",
+   "                            www#######      www##########",
+   "             www            www#######      www##########",
+   "             www   f        wfw#######      www##########                  f",
+   "             www            www#######      www##########",
+   "             www#######     www#######      www##########       f",
+   "             wfw#######     www#######      www##########             CCCCCCCCCCC       f",
+   "             www#######     www#######      www##########",
+   "  P  L       www#######     www#######      www##########^^^^     L                       ^^    G",
+   "########     www#######     www#######      www#######################             ##################",
+   "########     www#######     www#######      www#######################             ##################",
+   "########     www#######     www#######      www#######################             ##################"
+  ]
+ },
+ {
+  "name": "Steam Lattice",
+  "drain": 6.2,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                                      f",
+   "                                                              www           G",
+   "                                                              www################",
+   "                                                              www################",
+   "                        f          f     f         f          wfw################",
+   "                                                              www################",
+   "            www  L                           L                www################",
+   "            www################AAABBBAAABBB#############      AAA################",
+   "            www################            #############      www################",
+   "            wfw################            #############      www################",
+   "            www################            #############      wfw################",
+   "            www################            #############      www################",
+   "            AAA################            #############      www################",
+   "            www################            #############      BBB################",
+   "            www################            #############      www################",
+   "            wfw################            #############      www################",
+   "        f   www################            #############      wfw################",
+   "            www################            #############      www################",
+   "  P  L      www################            #############  L   www################",
+   "###############################            ######################################",
+   "###############################            ######################################",
+   "###############################            ######################################"
+  ]
+ },
+ {
+  "name": "The Long Soak",
+  "drain": 6.4,
+  "map": [
+   "",
+   "",
+   "",
+   "                                                    f",
+   "                                     www",
+   "                                     www  L    ^^",
+   "                                     www################",
+   "                                     www################",
+   "                                     www################                  f         f     f            f",
+   "                                     www                    www",
+   "                                     wfw                    www  L                              L   ^^    G",
+   "                    f          f     www                    www##################AAABBBAAABBB##################",
+   "                                     www                    www##################            ##################",
+   "              L                      www                    wfw##################            ##################",
+   "            ##############CCCCCCCCCCCwww                    www##################            ##################",
+   "          f ##############           www                    www##################            ##################",
+   "            ##############           www                    www##################            ##################",
+   "                                     www                    www##################            ##################",
+   "                                     www                    www##################            ##################",
+   "                                     www                    www##################            ##################",
+   "                                     www                    www##################            ##################",
+   "  P  L    S                          www                    www##################            ##################",
+   "############                         www                    www##################            ##################",
+   "############                         www                    www##################            ##################",
+   "############                         www                    www##################            ##################"
+  ]
+ }
+];
+
+
+(() => {
+'use strict';
+const T = 24, VW = 960, VH = 540;
+const PW = 14, PH = 20;
+const RUN = 210, GRAV = 2100, JUMP = 640, MAXFALL = 820, WALLSLIDE = 100;
+const WJ_X = 240, WJ_Y = 590, COYOTE = 0.1, BUFFER = 0.13, STEP = 1 / 120;
+const SPRING = 920, SWAP = 1.6;
+const STEAM = 3400, STEAM_MAX = 300;
+const FLY_GAIN = 30, FLY_RESPAWN = 7, CRUMBLE_DELAY = 0.4, CRUMBLE_BACK = 3;
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const dk = document.createElement('canvas');
+const dctx = dk.getContext('2d');
+let S = 1;
+let tileLayer = null;
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('lanternwick.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('lanternwick.' + k, JSON.stringify(v)); } catch (e) {} }
+};
+let best = store.get('best', {});
+let unlocked = store.get('unlocked', 0);
+
+// ---------- world state ----------
+let W = 0, H = 0, grid = [], fireflies = [], checkpoints = [], plats = [], crumbles = new Map(), goal = null, bells = [], rung = false;
+let levelIndex = 0, levelTime = 0, light = 100, spawn = { x: 0, y: 0 };
+let state = 'title', stateT = 0, time = 0;
+let deaths = 0, flies = 0, runTime = 0;
+let particles = [];
+const cam = { x: 0, y: 0 };
+const pl = { x: 0, y: 0, vx: 0, vy: 0, ground: false, coyote: 0, buffer: 0, wall: 0, wallLock: 0, face: 1, jumping: false, on: null, onOneWay: false, dropT: 0, sx: 1, sy: 1, run: 0, bounce: false };
+const keys = { left: false, right: false, jump: false, down: false };
+
+const stars = Array.from({ length: 110 }, () => ({ x: Math.random() * 2400, y: Math.random() * 330, r: Math.random() < 0.15 ? 1.6 : 0.9, p: Math.random() * 6.28 }));
+
+// ---------- level loading ----------
+function loadLevel(i) {
+  const L = LEVELS[i];
+  levelIndex = i;
+  H = L.map.length;
+  W = Math.max(...L.map.map(r => r.length));
+  grid = L.map.map(r => r.padEnd(W, ' ').split(''));
+  fireflies = []; checkpoints = []; plats = []; crumbles = new Map(); goal = null; bells = []; rung = false;
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    const ch = grid[r][c];
+    if (ch === 'P') { spawn = { x: c * T + (T - PW) / 2, y: (r + 1) * T - PH }; grid[r][c] = ' '; }
+    else if (ch === 'L') { checkpoints.push({ x: c * T + T / 2, y: (r + 1) * T, lit: false, glow: 0 }); grid[r][c] = ' '; }
+    else if (ch === 'f') { const bx = c * T + T / 2, by = r * T + T / 2; fireflies.push({ bx, by, x: bx, y: by, ph: Math.random() * 6.28, taken: false, t: 0, fade: 1 }); grid[r][c] = (r > 0 && r < H - 1 && grid[r - 1][c] === 'w' && grid[r + 1][c] === 'w') ? 'w' : ' '; }
+    else if (ch === 'G') { goal = { x: c * T + T / 2, y: (r + 1) * T }; grid[r][c] = ' '; }
+    else if (ch === 'M' || ch === 'V') {
+      plats.push({ ox: c * T, oy: r * T, x: c * T, y: r * T, w: 3 * T, h: 10, ax: ch === 'M' ? 'x' : 'y', amp: 3 * T, per: 3.4, dx: 0, dy: 0 });
+      grid[r][c] = ' ';
+    }
+    else if (ch === 'C') crumbles.set(r * W + c, { t: -1, gone: false, back: 0 });
+    else if (ch === 'b') { bells.push({ x: c * T + T / 2, y: r * T + T / 2, swing: 0 }); grid[r][c] = ' '; }
+  }
+  levelTime = 0;
+  buildTileLayer();
+  respawn();
+  cam.x = clampCamX(pl.x + PW / 2 - VW / 2);
+  cam.y = clampCamY(pl.y - VH * 0.55);
+  updatePaths();
+}
+
+function respawn() {
+  pl.x = spawn.x; pl.y = spawn.y; pl.vx = pl.vy = 0; pl.on = null; pl.ground = false;
+  pl.buffer = 0; pl.wallLock = 0; pl.face = 1; pl.sx = pl.sy = 1;
+  light = 100;
+  for (const cr of crumbles.values()) { cr.t = -1; cr.gone = false; cr.back = 0; }
+}
+
+// ---------- tiles ----------
+function tile(c, r) { if (c < 0 || c >= W) return '#'; if (r < 0 || r >= H) return ' '; return grid[r][c]; }
+function screenOn(ch, t = time) { const ph = Math.floor(t / SWAP) % 2; return ch === 'A' ? ph === 0 : ph === 1; }
+function solid(c, r) {
+  const ch = tile(c, r);
+  if (ch === 'A' || ch === 'B') return screenOn(ch);
+  if (ch === 'D') return !rung;
+  if (ch === '#' || ch === '~' || ch === 'S') return true;
+  if (ch === 'C') return !crumbles.get(r * W + c).gone;
+  return false;
+}
+function solidRect(x, y, w, h) {
+  const c0 = Math.floor(x / T), c1 = Math.floor((x + w - 0.01) / T);
+  const r0 = Math.floor(y / T), r1 = Math.floor((y + h - 0.01) / T);
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (solid(c, r)) return true;
+  return false;
+}
+function steamAt(x, y, w, h) {
+  const c0 = Math.floor(x / T), c1 = Math.floor((x + w - 0.01) / T);
+  const r0 = Math.floor(y / T), r1 = Math.floor((y + h - 0.01) / T);
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (tile(c, r) === 'w') return true;
+  return false;
+}
+function hash(c, r) { let h = (c * 374761393 + r * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
+
+function buildTileLayer() {
+  tileLayer = document.createElement('canvas');
+  tileLayer.width = Math.ceil(W * T * S); tileLayer.height = Math.ceil(H * T * S);
+  const g = tileLayer.getContext('2d');
+  g.setTransform(S, 0, 0, S, 0, 0);
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    const ch = grid[r][c], x = c * T, y = r * T;
+    if (ch === '#') drawStone(g, c, r, x, y);
+    else if (ch === '=') drawPlank(g, c, r, x, y);
+    else if (ch === '^') drawSpikes(g, x, y);
+    else if (ch === 'S') drawDrum(g, x, y);
+  }
+}
+function drawStone(g, c, r, x, y) {
+  const h = hash(c, r);
+  g.fillStyle = '#211d34'; g.fillRect(x, y, T, T);
+  const shade = ['#2e2946', '#332d4d', '#2a2541'][Math.floor(h * 3)];
+  g.fillStyle = shade;
+  if (r % 2 === 0) { g.fillRect(x + 1, y + 1, T - 2, T / 2 - 2); g.fillRect(x + 1, y + T / 2 + 1, T / 2 - 2, T / 2 - 2); g.fillRect(x + T / 2 + 1, y + T / 2 + 1, T / 2 - 2, T / 2 - 2); }
+  else { g.fillRect(x + 1, y + 1, T / 2 - 2, T / 2 - 2); g.fillRect(x + T / 2 + 1, y + 1, T / 2 - 2, T / 2 - 2); g.fillRect(x + 1, y + T / 2 + 1, T - 2, T / 2 - 2); }
+  const above = r > 0 && (grid[r - 1][c] === '#');
+  if (!above) {
+    g.fillStyle = '#3f6650'; g.fillRect(x, y, T, 5);
+    g.fillStyle = '#5c8f68'; g.fillRect(x, y, T, 2);
+    g.fillStyle = '#5c8f68';
+    for (let i = 0; i < 3; i++) { const tx = x + 3 + Math.floor(hash(c + i * 7, r) * (T - 6)); g.fillRect(tx, y - 2, 1, 2); g.fillRect(tx + 2, y - 3, 1, 3); }
+    if (h > 0.7) { g.fillStyle = '#3f6650'; g.fillRect(x + 4 + h * 10, y + 5, 2, 3 + h * 4); }
+  }
+  if (c > 0 && grid[r][c - 1] !== '#') { g.fillStyle = 'rgba(255,255,255,0.04)'; g.fillRect(x, y, 2, T); }
+}
+function drawDrum(g, x, y) {
+  g.fillStyle = '#7a2e22'; g.fillRect(x + 1, y + 5, T - 2, T - 5);
+  g.fillStyle = '#a63d2c'; g.fillRect(x + 3, y + 7, T - 6, T - 9);
+  g.fillStyle = '#e8c27a'; g.fillRect(x + 6, y + 13, 2, 2); g.fillRect(x + T - 8, y + 13, 2, 2);
+  g.fillStyle = '#d9c9a8'; g.fillRect(x, y + 2, T, 4);
+  g.fillStyle = '#f2e6cf'; g.fillRect(x + 1, y + 2, T - 2, 2);
+  g.fillStyle = '#3a2a22'; g.fillRect(x, y + 6, T, 1); g.fillRect(x, y + T - 2, T, 2);
+}
+function drawPlank(g, c, r, x, y) {
+  g.fillStyle = '#5a3b24'; g.fillRect(x, y, T, 8);
+  g.fillStyle = '#8c5d36'; g.fillRect(x, y, T, 3);
+  g.fillStyle = '#3d281a'; g.fillRect(x + T - 1, y, 1, 8);
+  if (tile(c - 1, r) !== '=' || tile(c + 1, r) !== '=') { g.fillStyle = '#3d281a'; g.fillRect(x + (tile(c - 1, r) !== '=' ? 3 : T - 6), y + 8, 3, 6); }
+  g.fillStyle = '#c9a26e'; g.fillRect(x + 5, y + 4, 1, 1); g.fillRect(x + T - 6, y + 4, 1, 1);
+}
+function drawSpikes(g, x, y) {
+  g.fillStyle = '#4a4458'; g.fillRect(x, y + T - 4, T, 4);
+  for (let i = 0; i < 3; i++) {
+    const sx = x + i * 8;
+    g.fillStyle = '#d9d1c2';
+    g.beginPath(); g.moveTo(sx, y + T - 3); g.lineTo(sx + 4, y + 9); g.lineTo(sx + 8, y + T - 3); g.closePath(); g.fill();
+    g.fillStyle = '#8f8795';
+    g.beginPath(); g.moveTo(sx + 4, y + 9); g.lineTo(sx + 8, y + T - 3); g.lineTo(sx + 4, y + T - 3); g.closePath(); g.fill();
+  }
+}
+
+// ---------- audio ----------
+let actx = null, soundOn = store.get('sound', true);
+function audio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); }
+function tone(f, d, type = 'sine', v = 0.08, f2 = null, delay = 0) {
+  if (!soundOn || !actx) return;
+  const t0 = actx.currentTime + delay, o = actx.createOscillator(), gn = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t0);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + d);
+  gn.gain.setValueAtTime(v, t0); gn.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+  o.connect(gn).connect(actx.destination); o.start(t0); o.stop(t0 + d + 0.02);
+}
+const sfx = {
+  jump() { tone(330, 0.12, 'triangle', 0.06, 520); },
+  wall() { tone(280, 0.12, 'triangle', 0.06, 480); },
+  fly() { tone(990, 0.09, 'sine', 0.05); tone(1480, 0.14, 'sine', 0.04, null, 0.05); },
+  lantern() { [523, 659, 784].forEach((f, i) => tone(f, 0.35, 'sine', 0.05, null, i * 0.08)); },
+  die() { tone(220, 0.5, 'sawtooth', 0.04, 60); },
+  bell() { [392, 784, 1176].forEach((f, i) => tone(f, 1.6 - i * 0.4, 'sine', 0.07 - i * 0.015)); },
+  drum() { tone(90, 0.25, 'sine', 0.12, 50); tone(180, 0.08, 'triangle', 0.05); },
+  crumble() { tone(120, 0.15, 'square', 0.025, 70); },
+  clear() { [392, 523, 659, 784, 1046].forEach((f, i) => tone(f, 0.5, 'triangle', 0.05, null, i * 0.1)); },
+};
+
+// ---------- particles ----------
+function burst(x, y, n, col, sp = 120, life = 0.6, g = 300, size = 2) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = sp * (0.3 + Math.random() * 0.7);
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - sp * 0.3, life: life * (0.6 + Math.random() * 0.4), max: life, col, g, size });
+  }
+}
+
+// ---------- physics ----------
+function moveX(dx) {
+  pl.x += dx;
+  const r0 = Math.floor(pl.y / T), r1 = Math.floor((pl.y + PH - 0.01) / T);
+  if (dx > 0) { const c = Math.floor((pl.x + PW - 0.01) / T); for (let r = r0; r <= r1; r++) if (solid(c, r)) { pl.x = c * T - PW; pl.vx = 0; break; } }
+  else if (dx < 0) { const c = Math.floor(pl.x / T); for (let r = r0; r <= r1; r++) if (solid(c, r)) { pl.x = (c + 1) * T; pl.vx = 0; break; } }
+}
+function moveY(dy) {
+  const prevBottom = pl.y + PH;
+  pl.y += dy;
+  const c0 = Math.floor(pl.x / T), c1 = Math.floor((pl.x + PW - 0.01) / T);
+  if (dy > 0) {
+    const r = Math.floor((pl.y + PH - 0.01) / T);
+    for (let c = c0; c <= c1; c++) {
+      const one = tile(c, r) === '=' && prevBottom <= r * T + 0.5 && pl.dropT <= 0;
+      if (solid(c, r) || one) {
+        pl.y = r * T - PH; pl.vy = 0; pl.ground = true; pl.onOneWay = one && !solid(c, r);
+        for (let k = c0; k <= c1; k++) if (tile(k, r) === 'S') pl.bounce = true;
+        for (let k = c0; k <= c1; k++) if (tile(k, r) === 'C') { const cr = crumbles.get(r * W + k); if (!cr.gone && cr.t < 0) { cr.t = CRUMBLE_DELAY; } }
+        break;
+      }
+    }
+    if (!pl.ground) for (const p of plats) {
+      const oldTop = p.y - p.dy;
+      if (pl.x + PW > p.x + 1 && pl.x < p.x + p.w - 1 && prevBottom <= Math.max(p.y, oldTop) + 1 && pl.y + PH >= p.y) {
+        pl.y = p.y - PH; pl.vy = 0; pl.ground = true; pl.on = p; break;
+      }
+    }
+  } else if (dy < 0) {
+    const r = Math.floor(pl.y / T);
+    for (let c = c0; c <= c1; c++) if (solid(c, r)) { pl.y = (r + 1) * T; pl.vy = 0; break; }
+  }
+}
+
+function pressJump() {
+  audio();
+  if (state === 'title') { startRun(0); return; }
+  if (state === 'clear' && stateT > 0.6) { nextLevel(); return; }
+  if (state === 'end' && stateT > 1) { deaths = 0; flies = 0; runTime = 0; startRun(0); return; }
+  if (state === 'paused') { state = 'play'; return; }
+  pl.buffer = BUFFER;
+}
+
+function updatePlayer(dt) {
+  const ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  if (pl.on) { const p = pl.on; moveX(p.dx); pl.y = p.y - PH; }
+  pl.on = null;
+  pl.coyote = pl.ground ? COYOTE : pl.coyote - dt;
+  pl.buffer -= dt; pl.wallLock -= dt; pl.dropT -= dt;
+
+  if (pl.wallLock <= 0) {
+    const target = ix * RUN, a = (pl.ground ? 2600 : 1700) * dt;
+    pl.vx = pl.vx < target ? Math.min(target, pl.vx + a) : Math.max(target, pl.vx - a);
+  }
+  if (ix && pl.wallLock <= 0) pl.face = ix;
+
+  pl.wall = 0;
+  if (!pl.ground) {
+    if (solidRect(pl.x - 2, pl.y + 3, 2, PH - 6)) pl.wall = -1;
+    else if (solidRect(pl.x + PW, pl.y + 3, 2, PH - 6)) pl.wall = 1;
+  }
+  if (keys.down && pl.ground && pl.onOneWay) { pl.dropT = 0.2; pl.ground = false; pl.coyote = 0; pl.y += 1; }
+
+  if (pl.buffer > 0) {
+    if (pl.ground || pl.coyote > 0) {
+      pl.vy = -JUMP; pl.ground = false; pl.coyote = 0; pl.buffer = 0; pl.jumping = true;
+      pl.sx = 0.75; pl.sy = 1.3; sfx.jump(); burst(pl.x + PW / 2, pl.y + PH, 6, '#9b8fb8', 60, 0.35, 200, 2);
+    } else if (pl.wall) {
+      pl.vy = -WJ_Y; pl.vx = -pl.wall * WJ_X; pl.wallLock = 0.16; pl.face = -pl.wall; pl.buffer = 0; pl.jumping = true;
+      pl.sx = 0.8; pl.sy = 1.2; sfx.wall(); burst(pl.x + (pl.wall > 0 ? PW : 0), pl.y + PH / 2, 6, '#9b8fb8', 60, 0.35, 200, 2);
+    }
+  }
+  if (pl.jumping && !keys.jump && pl.vy < 0) { pl.vy *= 0.45; pl.jumping = false; }
+  if (pl.vy >= 0) pl.jumping = false;
+
+  const inSteam = steamAt(pl.x, pl.y, PW, PH);
+  if (inSteam) { pl.vy -= STEAM * dt; pl.jumping = false; }
+  pl.vy += GRAV * dt * (pl.vy > 0 ? 1.15 : 1);
+  const sliding = pl.wall && ix === pl.wall && pl.vy > 0;
+  const maxF = sliding ? WALLSLIDE : MAXFALL;
+  if (pl.vy > maxF) pl.vy = maxF;
+  if (inSteam && pl.vy < -STEAM_MAX) pl.vy = -STEAM_MAX;
+  if (sliding && Math.random() < 0.2) particles.push({ x: pl.x + (pl.wall > 0 ? PW : 0), y: pl.y + PH - 4, vx: 0, vy: 20, life: 0.3, max: 0.3, col: '#6d6589', g: 0, size: 1.5 });
+
+  const wasGround = pl.ground, fallV = pl.vy;
+  pl.ground = false; pl.onOneWay = false;
+  moveX(pl.vx * dt);
+  moveY(pl.vy * dt);
+  if (pl.bounce) {
+    pl.bounce = false; pl.vy = -SPRING; pl.ground = false; pl.coyote = 0; pl.jumping = false; pl.on = null;
+    pl.sx = 0.7; pl.sy = 1.35; sfx.drum(); burst(pl.x + PW / 2, pl.y + PH, 10, '#e0a24a', 90, 0.45, 250, 2);
+  } else if (pl.ground && !wasGround && fallV > 300) { pl.sx = 1.3; pl.sy = 0.75; burst(pl.x + PW / 2, pl.y + PH, 5, '#7c7299', 50, 0.3, 150, 2); }
+  pl.sx += (1 - pl.sx) * Math.min(1, dt * 14); pl.sy += (1 - pl.sy) * Math.min(1, dt * 14);
+  pl.run += Math.abs(pl.vx) * dt;
+
+  // hazards
+  const c0 = Math.floor(pl.x / T), c1 = Math.floor((pl.x + PW - 0.01) / T);
+  const r0 = Math.floor(pl.y / T), r1 = Math.floor((pl.y + PH - 0.01) / T);
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (tile(c, r) === '^') {
+    const sx = c * T + 3, sy = r * T + 11;
+    if (pl.x + PW - 2 > sx && pl.x + 2 < sx + T - 6 && pl.y + PH - 1 > sy) return die();
+  }
+  if (pl.y > H * T + 40) return die();
+
+  // light
+  light -= LEVELS[levelIndex].drain * dt;
+  const cx = pl.x + PW / 2, cy = pl.y + PH / 2;
+  for (const cp of checkpoints) {
+    const near = Math.abs(cx - cp.x) < 18 && cy > cp.y - 48 && cy < cp.y + 6;
+    if (near && !cp.lit) {
+      checkpoints.forEach(o => { if (o !== cp && o.lit) o.lit = 'old'; });
+      cp.lit = true; spawn = { x: cp.x - PW / 2, y: cp.y - PH }; sfx.lantern(); burst(cp.x, cp.y - 22, 18, '#ffcf7a', 90, 0.8, -40, 2);
+    } else if (near && cp.lit === 'old') {
+      checkpoints.forEach(o => { if (o.lit === true) o.lit = 'old'; });
+      cp.lit = true; spawn = { x: cp.x - PW / 2, y: cp.y - PH };
+    }
+    if (cp.lit && Math.abs(cx - cp.x) < 60 && Math.abs(cy - (cp.y - 20)) < 60) light = Math.min(100, light + 45 * dt);
+  }
+  for (const b of bells) if (!rung && Math.abs(cx - b.x) < 16 && Math.abs(cy - b.y) < 22) {
+    rung = true; b.swing = 1; sfx.bell(); burst(b.x, b.y, 24, '#f0c35a', 120, 1, 60, 2);
+    for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) if (grid[r][c] === 'D') burst(c * T + T / 2, r * T + T / 2, 2, '#8c5d36', 60, 0.6, 400, 3);
+  }
+  for (const f of fireflies) if (!f.taken && f.fade > 0.6 && Math.hypot(cx - f.x, cy - f.y) < 18) {
+    f.taken = true; f.t = FLY_RESPAWN; flies++; light = Math.min(100, light + FLY_GAIN);
+    sfx.fly(); burst(f.x, f.y, 12, '#dcf27e', 70, 0.6, -20, 1.6);
+  }
+  if (light <= 0) { light = 0; return die(); }
+
+  if (goal && Math.abs(cx - goal.x) < 20 && pl.y + PH > goal.y - 56 && pl.y < goal.y) clearLevel();
+}
+
+function die() {
+  deaths++; state = 'dead'; stateT = 0; sfx.die();
+  burst(pl.x + PW / 2, pl.y + PH / 2, 26, '#ff9a3c', 160, 0.9, 260, 2.2);
+  burst(pl.x + PW / 2, pl.y + PH / 2, 10, '#f2e6cf', 90, 0.7, 200, 2);
+}
+function clearLevel() {
+  state = 'clear'; stateT = 0; sfx.clear();
+  const prev = best[levelIndex];
+  if (!prev || levelTime < prev) { best[levelIndex] = Math.round(levelTime * 10) / 10; store.set('best', best); }
+  if (levelIndex + 1 > unlocked && levelIndex + 1 < LEVELS.length) { unlocked = levelIndex + 1; store.set('unlocked', unlocked); }
+  burst(goal.x, goal.y - 60, 40, '#ffcf7a', 160, 1.2, -30, 2);
+  updatePaths();
+}
+function nextLevel() {
+  if (levelIndex + 1 < LEVELS.length) { loadLevel(levelIndex + 1); state = 'intro'; stateT = 0; }
+  else { state = 'end'; stateT = 0; }
+}
+function startRun(i) { loadLevel(i); state = 'intro'; stateT = 0; canvas.focus({ preventScroll: true }); }
+
+// ---------- world update ----------
+function clampCamX(x) { return W * T <= VW ? (W * T - VW) / 2 : Math.max(0, Math.min(W * T - VW, x)); }
+function clampCamY(y) { return H * T <= VH ? H * T - VH : Math.max(0, Math.min(H * T - VH, y)); }
+
+function step(dt) {
+  time += dt; stateT += dt;
+  for (const p of plats) {
+    const o = Math.sin(time * Math.PI * 2 / p.per) * p.amp;
+    const nx = p.ax === 'x' ? p.ox + o : p.ox, ny = p.ax === 'y' ? p.oy + o : p.oy;
+    p.dx = nx - p.x; p.dy = ny - p.y; p.x = nx; p.y = ny;
+  }
+  for (const [k, cr] of crumbles) {
+    if (cr.t > 0) { cr.t -= dt; if (cr.t <= 0) { cr.gone = true; cr.back = CRUMBLE_BACK; sfx.crumble(); const c = k % W, r = (k / W) | 0; burst(c * T + T / 2, r * T + T / 2, 8, '#8a6e4c', 60, 0.6, 500, 3); } }
+    else if (cr.gone) {
+      cr.back -= dt;
+      if (cr.back <= 0) { const c = k % W, r = (k / W) | 0; const over = pl.x + PW > c * T && pl.x < c * T + T && pl.y + PH > r * T && pl.y < r * T + T; if (!over) { cr.gone = false; cr.t = -1; } }
+    }
+  }
+  for (const f of fireflies) {
+    f.x = f.bx + Math.sin(time * 1.3 + f.ph) * 5; f.y = f.by + Math.sin(time * 2.1 + f.ph * 1.7) * 6;
+    if (f.taken) { f.t -= dt; if (f.t <= 0) { f.taken = false; f.fade = 0; } }
+    else if (f.fade < 1) f.fade = Math.min(1, f.fade + dt);
+  }
+  for (const cp of checkpoints) cp.glow += ((cp.lit ? 1 : 0) - cp.glow) * Math.min(1, dt * 4);
+
+  if (Math.floor(time / SWAP) !== Math.floor((time - dt) / SWAP) && state === 'play' && solidRect(pl.x, pl.y, PW, PH)) {
+    // a screen slid shut on the lantern: nudge it up and out
+    for (let i = 0; i < 60 && solidRect(pl.x, pl.y, PW, PH); i++) pl.y -= 1;
+    if (solidRect(pl.x, pl.y, PW, PH)) die();
+  }
+  if (state === 'play') { updatePlayer(dt); levelTime += dt; runTime += dt; }
+  else if (state === 'intro') { if (stateT > 0.9) state = 'play'; }
+  else if (state === 'dead') { if (stateT > 0.9) { respawn(); state = 'play'; } }
+  else if (state === 'clear') { if (stateT > 2.6) nextLevel(); }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i]; p.life -= dt;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.98;
+  }
+  const tx = clampCamX(pl.x + PW / 2 - VW / 2 + pl.face * 50), ty = clampCamY(pl.y - VH * 0.55);
+  cam.x += (tx - cam.x) * Math.min(1, dt * 5); cam.y += (ty - cam.y) * Math.min(1, dt * 5);
+}
+
+// ---------- rendering ----------
+function lightRadius() { const f = 1 + Math.sin(time * 13) * 0.015 + Math.sin(time * 7.3) * 0.02 + (light < 25 ? Math.sin(time * 31) * 0.05 : 0); return (46 + light * 1.75) * f; }
+
+function drawSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, VH);
+  g.addColorStop(0, '#0c0a1d'); g.addColorStop(0.6, '#1a1533'); g.addColorStop(1, '#2a1d3e');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  for (const s of stars) {
+    const x = ((s.x - cam.x * 0.06) % 2400 + 2400) % 2400; if (x > VW) continue;
+    ctx.globalAlpha = 0.45 + Math.sin(time * 1.5 + s.p) * 0.35; ctx.fillStyle = '#f2e6cf';
+    ctx.fillRect(x, s.y - cam.y * 0.04, s.r, s.r);
+  }
+  ctx.globalAlpha = 1;
+  const mx = 760 - cam.x * 0.03, my = 90 - cam.y * 0.03;
+  ctx.fillStyle = 'rgba(242,230,207,0.08)'; ctx.beginPath(); ctx.arc(mx, my, 54, 0, 7); ctx.fill();
+  ctx.fillStyle = '#efe2c4'; ctx.beginPath(); ctx.arc(mx, my, 26, 0, 7); ctx.fill();
+  ctx.fillStyle = '#16122b'; ctx.beginPath(); ctx.arc(mx + 10, my - 6, 23, 0, 7); ctx.fill();
+  hills(0.15, 330, 46, '#1d1736', 1.3);
+  hills(0.32, 400, 38, '#171230', 4.1);
+}
+function hills(par, base, amp, col, seed) {
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, VH);
+  for (let sx = 0; sx <= VW + 16; sx += 16) {
+    const wx = sx + cam.x * par;
+    const y = base - cam.y * par + Math.sin(wx * 0.004 + seed) * amp + Math.sin(wx * 0.011 + seed * 2) * amp * 0.4;
+    ctx.lineTo(sx, y);
+  }
+  ctx.lineTo(VW, VH); ctx.closePath(); ctx.fill();
+  if (par > 0.3) {
+    for (let k = Math.floor(cam.x * par / 180) - 1; k < Math.floor((cam.x * par + VW) / 180) + 2; k++) {
+      if (hash(k, 9) < 0.55) continue;
+      const wx = k * 180 + hash(k, 3) * 90, sx = wx - cam.x * par;
+      const y = base - cam.y * par + Math.sin(wx * 0.004 + seed) * amp + Math.sin(wx * 0.011 + seed * 2) * amp * 0.4;
+      const h = 34 + hash(k, 5) * 30;
+      ctx.beginPath(); ctx.moveTo(sx, y - h); ctx.lineTo(sx - 12, y + 4); ctx.lineTo(sx + 12, y + 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(sx, y - h * 0.7); ctx.lineTo(sx - 15, y - h * 0.15); ctx.lineTo(sx + 15, y - h * 0.15); ctx.closePath(); ctx.fill();
+    }
+  }
+}
+
+function drawCheckpoint(cp) {
+  const x = cp.x, y = cp.y;
+  ctx.fillStyle = '#4c475e'; ctx.fillRect(x - 9, y - 4, 18, 4);
+  ctx.fillStyle = '#5c566f'; ctx.fillRect(x - 3, y - 14, 6, 10);
+  ctx.fillStyle = '#4c475e'; ctx.fillRect(x - 8, y - 17, 16, 3);
+  ctx.fillStyle = '#5c566f'; ctx.fillRect(x - 7, y - 29, 14, 12);
+  ctx.fillStyle = cp.glow > 0.05 ? `rgba(255,${190 + cp.glow * 30},110,${0.25 + cp.glow * 0.75})` : '#1d1a29';
+  ctx.fillRect(x - 4, y - 26, 8, 7);
+  ctx.fillStyle = '#6a647e';
+  ctx.beginPath(); ctx.moveTo(x - 12, y - 29); ctx.lineTo(x + 12, y - 29); ctx.lineTo(x + 6, y - 35); ctx.lineTo(x - 6, y - 35); ctx.closePath(); ctx.fill();
+  ctx.fillRect(x - 2, y - 39, 4, 4);
+}
+function drawGoal() {
+  const x = goal.x, y = goal.y;
+  ctx.fillStyle = '#b8432f';
+  ctx.fillRect(x - 26, y - 64, 6, 64); ctx.fillRect(x + 20, y - 64, 6, 64);
+  ctx.fillRect(x - 32, y - 52, 64, 5);
+  ctx.fillStyle = '#d0533a';
+  ctx.beginPath(); ctx.moveTo(x - 40, y - 70); ctx.quadraticCurveTo(x, y - 64, x + 40, y - 70); ctx.lineTo(x + 36, y - 63); ctx.quadraticCurveTo(x, y - 58, x - 36, y - 63); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#211d34'; ctx.fillRect(x - 40, y - 72, 80, 3);
+  ctx.fillStyle = '#2a2638'; ctx.fillRect(x - 28, y - 3, 10, 3); ctx.fillRect(x + 18, y - 3, 10, 3);
+  ctx.strokeStyle = '#3b2f2a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y - 47); ctx.lineTo(x, y - 40); ctx.stroke();
+}
+function drawGoalLantern() {
+  const x = goal.x, y = goal.y - 28 + Math.sin(time * 2) * 1.5;
+  ctx.fillStyle = '#3b2a22'; ctx.fillRect(x - 5, y - 13, 10, 3); ctx.fillRect(x - 5, y + 10, 10, 3);
+  ctx.fillStyle = '#ffb45e'; ctx.beginPath(); ctx.ellipse(x, y, 9, 11, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffe1a8'; ctx.beginPath(); ctx.ellipse(x, y, 5, 8, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(176,79,34,0.6)'; ctx.lineWidth = 1;
+  for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(x - 9 + Math.abs(i) * 1.5, y + i * 5); ctx.lineTo(x + 9 - Math.abs(i) * 1.5, y + i * 5); ctx.stroke(); }
+}
+function drawPlat(p) {
+  const x = Math.round(p.x), y = Math.round(p.y);
+  ctx.fillStyle = '#5a3b24'; ctx.fillRect(x, y, p.w, p.h);
+  ctx.fillStyle = '#8c5d36'; ctx.fillRect(x, y, p.w, 3);
+  ctx.fillStyle = '#3d281a'; for (let i = 1; i < 3; i++) ctx.fillRect(x + i * T, y, 1, p.h);
+  ctx.fillStyle = '#d0533a'; ctx.fillRect(x + 4, y + p.h, 2, 6); ctx.fillRect(x + p.w - 6, y + p.h, 2, 6);
+  ctx.fillStyle = '#f2e6cf'; ctx.fillRect(x + 3, y + p.h + 6, 4, 7); ctx.fillRect(x + p.w - 7, y + p.h + 6, 4, 7);
+}
+function drawScreen(c, r, ch, on, warn) {
+  const x = c * T, y = r * T, sun = ch === 'A';
+  const frame = sun ? '#8a4a2a' : '#3e4f7a', paper = sun ? '#f1dfb8' : '#c9d6f0';
+  if (on) {
+    ctx.globalAlpha = warn && Math.floor(time * 16) % 2 ? 0.45 : 0.85;
+    ctx.fillStyle = frame; ctx.fillRect(x, y, T, T);
+    ctx.fillStyle = paper; ctx.fillRect(x + 2, y + 2, T - 4, T - 4);
+    ctx.fillStyle = frame; ctx.fillRect(x + T / 2 - 1, y + 2, 2, T - 4); ctx.fillRect(x + 2, y + T / 2 - 1, T - 4, 2);
+    ctx.fillStyle = sun ? 'rgba(255,170,80,0.25)' : 'rgba(120,150,255,0.2)'; ctx.fillRect(x + 2, y + 2, T - 4, 4);
+    ctx.globalAlpha = 1;
+  } else {
+    ctx.strokeStyle = frame; ctx.globalAlpha = warn ? 0.9 : 0.5; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.strokeRect(x + 2.5, y + 2.5, T - 5, T - 5); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+}
+function drawGate(c, r) {
+  const x = c * T, y = r * T;
+  if (rung) { ctx.strokeStyle = 'rgba(140,93,54,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(x + 3.5, y + 0.5, T - 7, T - 1); return; }
+  ctx.fillStyle = '#4a3020'; ctx.fillRect(x + 2, y, T - 4, T);
+  ctx.fillStyle = '#6e4a2c'; ctx.fillRect(x + 4, y, 7, T); ctx.fillRect(x + 13, y, 7, T);
+  ctx.fillStyle = '#2b2233'; ctx.fillRect(x + 2, y + 9, T - 4, 3);
+  ctx.fillStyle = '#9a8f7a'; ctx.fillRect(x + 6, y + 10, 1, 1); ctx.fillRect(x + 17, y + 10, 1, 1);
+}
+function drawBell(b) {
+  const sw = Math.sin(time * 9) * b.swing * 0.35; b.swing *= 0.995;
+  ctx.save(); ctx.translate(b.x, b.y - 11);
+  ctx.fillStyle = '#3b2a22'; ctx.fillRect(-9, -3, 18, 3);
+  ctx.rotate(sw);
+  ctx.fillStyle = rung ? '#a07a3a' : '#d8a64a';
+  ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(3, 0); ctx.quadraticCurveTo(7, 4, 7, 17); ctx.lineTo(-7, 17); ctx.quadraticCurveTo(-7, 4, -3, 0); ctx.fill();
+  ctx.fillStyle = rung ? '#7a5a2a' : '#f3d58a'; ctx.fillRect(-7, 14, 14, 3);
+  ctx.fillStyle = '#5a4020'; ctx.fillRect(-1, 17, 2, 3);
+  ctx.restore();
+  if (!rung) glow(b.x, b.y, 22, `rgba(240,195,90,${0.25 + Math.sin(time * 3) * 0.1})`);
+}
+function drawSteam(c, r) {
+  const below = tile(c, r + 1);
+  if (below !== 'w' && solid(c, r + 1)) {
+    ctx.fillStyle = '#1a1626'; ctx.fillRect(c * T + 2, r * T + T - 3, T - 4, 3);
+    ctx.fillStyle = 'rgba(255,170,90,0.35)'; ctx.fillRect(c * T + 5, r * T + T - 2, T - 10, 1);
+  }
+  for (let i = 0; i < 3; i++) {
+    const ph = (time * 1.4 + hash(c, r * 3 + i)) % 1;
+    const x = c * T + 4 + hash(c + i * 5, r) * 16 + Math.sin(time * 3 + i + r) * 3;
+    const y = r * T + T - ph * T;
+    const a = 0.16 * (1 - Math.abs(ph - 0.5) * 2);
+    ctx.fillStyle = `rgba(226,236,246,${a})`;
+    ctx.beginPath(); ctx.arc(x, y, 3 + ph * 4, 0, 7); ctx.fill();
+  }
+}
+function drawCrumble(c, r, cr) {
+  if (cr.gone) return;
+  let x = c * T, y = r * T;
+  if (cr.t > 0) { x += Math.sin(time * 90 + c) * 1.2; y += (CRUMBLE_DELAY - cr.t) * 4; }
+  ctx.fillStyle = '#6b5640'; ctx.fillRect(x, y, T, T);
+  ctx.fillStyle = '#8a6e4c'; ctx.fillRect(x + 1, y + 1, T - 2, T - 4);
+  ctx.fillStyle = '#a8895f'; ctx.fillRect(x, y, T, 3);
+  ctx.strokeStyle = '#4a3a2a'; ctx.lineWidth = 1; ctx.beginPath();
+  const h = hash(c, r);
+  ctx.moveTo(x + 4 + h * 8, y + 3); ctx.lineTo(x + 10, y + 11); ctx.lineTo(x + 7 + h * 6, y + T - 3);
+  ctx.moveTo(x + 10, y + 11); ctx.lineTo(x + T - 4, y + 9 + h * 6);
+  ctx.stroke();
+}
+function drawGhost(c, r, a) {
+  const x = c * T, y = r * T;
+  ctx.fillStyle = `rgba(150,215,255,${0.16 * a})`; ctx.fillRect(x, y, T, T);
+  ctx.strokeStyle = `rgba(185,232,255,${0.85 * a})`; ctx.lineWidth = 1;
+  ctx.strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
+  ctx.strokeStyle = `rgba(185,232,255,${0.35 * a})`;
+  ctx.beginPath(); ctx.moveTo(x + 6, y + T - 6); ctx.lineTo(x + T - 6, y + 6); ctx.moveTo(x + 6, y + 12); ctx.lineTo(x + 12, y + 6); ctx.stroke();
+}
+function drawPlayer(alpha) {
+  const cx = pl.x + PW / 2, by = pl.y + PH;
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.translate(cx, by); ctx.scale(pl.sx, pl.sy);
+  const moving = pl.ground && Math.abs(pl.vx) > 20;
+  const leg = moving ? Math.sin(pl.run * 0.09) * 3 : 0;
+  ctx.fillStyle = '#2b1f1a';
+  ctx.fillRect(-5 + leg * 0.5, -4, 2, 4); ctx.fillRect(3 - leg * 0.5, -4, 2, 4);
+  if (!pl.ground) { ctx.fillRect(-5, -4, 2, 3); ctx.fillRect(3, -4, 2, 3); }
+  const bob = moving ? Math.abs(Math.sin(pl.run * 0.09)) * -1.5 : 0;
+  ctx.translate(0, bob);
+  ctx.fillStyle = '#3a2a22'; ctx.fillRect(-5, -6, 10, 3); ctx.fillRect(-4, -22, 8, 3);
+  const k = light / 100;
+  ctx.fillStyle = '#d9652e'; ctx.beginPath(); ctx.ellipse(0, -13, 8, 8.5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = `rgba(255,${170 + k * 50},${90 + k * 60},${0.35 + k * 0.6})`; ctx.beginPath(); ctx.ellipse(0, -13, 5, 6.5, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,58,24,0.55)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-7.5, -16); ctx.lineTo(7.5, -16); ctx.moveTo(-7.5, -10); ctx.lineTo(7.5, -10); ctx.stroke();
+  ctx.fillStyle = '#2b1f1a';
+  const ex = pl.face * 2.5; const blink = (time % 3.7) < 0.1 ? 0.5 : 2;
+  ctx.fillRect(ex - 3, -14, 1.6, blink); ctx.fillRect(ex + 1.4, -14, 1.6, blink);
+  ctx.restore();
+}
+function drawFlame() {
+  if (state === 'dead') return;
+  const x = pl.x + PW / 2 + pl.face * 0.5 - pl.vx * 0.006, y = pl.y + PH - 22 * pl.sy - 1;
+  const s = (0.55 + light / 220) * (1 + Math.sin(time * 23) * 0.08);
+  ctx.fillStyle = 'rgba(255,154,60,0.9)';
+  ctx.beginPath(); ctx.moveTo(x, y - 9 * s); ctx.quadraticCurveTo(x + 4 * s, y - 2 * s, x, y + 1); ctx.quadraticCurveTo(x - 4 * s, y - 2 * s, x, y - 9 * s); ctx.fill();
+  ctx.fillStyle = '#ffe9a8';
+  ctx.beginPath(); ctx.moveTo(x, y - 5 * s); ctx.quadraticCurveTo(x + 2 * s, y - 1 * s, x, y + 0.5); ctx.quadraticCurveTo(x - 2 * s, y - 1 * s, x, y - 5 * s); ctx.fill();
+}
+
+function hole(x, y, r, s) {
+  const g = dctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(0,0,0,${s})`); g.addColorStop(0.5, `rgba(0,0,0,${s * 0.8})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  dctx.fillStyle = g; dctx.fillRect(x - r, y - r, r * 2, r * 2);
+}
+function glow(x, y, r, col) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+}
+
+function render() {
+  ctx.setTransform(S, 0, 0, S, 0, 0);
+  const camX = Math.round(cam.x * S) / S, camY = Math.round(cam.y * S) / S;
+  drawSky();
+  ctx.drawImage(tileLayer, camX * S, camY * S, VW * S, VH * S, 0, 0, VW, VH);
+  ctx.save(); ctx.translate(-camX, -camY);
+  const c0 = Math.floor(camX / T) - 1, c1 = Math.ceil((camX + VW) / T) + 1;
+  for (const [k, cr] of crumbles) { const c = k % W; if (c >= c0 && c <= c1) drawCrumble(c, (k / W) | 0, cr); }
+  for (const p of plats) drawPlat(p);
+  for (let r = Math.max(0, Math.floor(camY / T)); r < Math.min(H, Math.ceil((camY + VH) / T) + 1); r++)
+    for (let c = Math.max(0, c0); c < Math.min(W, c1); c++) if (grid[r][c] === 'D') drawGate(c, r);
+  for (const cp of checkpoints) drawCheckpoint(cp);
+  if (goal) drawGoal();
+  const showP = state !== 'dead' || stateT > 0.9;
+  if (showP && state !== 'end') drawPlayer(1);
+  ctx.restore();
+
+  // darkness
+  const R = lightRadius(), pcx = pl.x + PW / 2 - camX, pcy = pl.y + PH / 2 - camY;
+  dctx.setTransform(S, 0, 0, S, 0, 0);
+  dctx.globalCompositeOperation = 'source-over';
+  dctx.clearRect(0, 0, VW, VH);
+  dctx.fillStyle = `rgba(5,4,14,${Math.min(0.95, 0.8 + levelIndex * 0.03)})`; dctx.fillRect(0, 0, VW, VH);
+  dctx.globalCompositeOperation = 'destination-out';
+  if (state !== 'dead') hole(pcx, pcy, R, 1);
+  for (const f of fireflies) if (!f.taken) hole(f.x - camX, f.y - camY, 46, 0.7 * f.fade);
+  for (const cp of checkpoints) hole(cp.x - camX, cp.y - 22 - camY, 40 + cp.glow * 80, 0.35 + cp.glow * 0.6);
+  if (goal) hole(goal.x - camX, goal.y - 30 - camY, 150, 0.95);
+  for (const b of bells) hole(b.x - camX, b.y - camY, rung ? 50 : 70, 0.7);
+  for (const p of particles) if (p.col === '#ff9a3c' || p.col === '#ffcf7a') hole(p.x - camX, p.y - camY, 18, 0.5 * p.life / p.max);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(dk, 0, 0);
+  ctx.setTransform(S, 0, 0, S, 0, 0);
+
+  // emissive layer
+  ctx.save(); ctx.translate(-camX, -camY);
+  ctx.globalCompositeOperation = 'lighter';
+  if (state !== 'dead') glow(pl.x + PW / 2, pl.y + PH / 2, R * 0.7, `rgba(255,140,50,${0.06 + light / 1400})`);
+  for (const cp of checkpoints) if (cp.glow > 0.05) glow(cp.x, cp.y - 22, 70, `rgba(255,190,100,${0.18 * cp.glow})`);
+  if (goal) glow(goal.x, goal.y - 28, 90, 'rgba(255,170,80,0.22)');
+  ctx.globalCompositeOperation = 'source-over';
+  // spirit stones, revealed by the wick
+  const pwx = pl.x + PW / 2, pwy = pl.y + PH / 2;
+  for (let r = Math.max(0, Math.floor(camY / T)); r < Math.min(H, Math.ceil((camY + VH) / T) + 1); r++)
+    for (let c = Math.max(0, c0); c < Math.min(W, c1); c++) if (grid[r][c] === '~') {
+      const d = Math.hypot(c * T + T / 2 - pwx, r * T + T / 2 - pwy);
+      const a = state === 'dead' ? 0 : Math.max(0, Math.min(1, (R * 0.95 - d) / (R * 0.35)));
+      if (a > 0.01) drawGhost(c, r, a);
+    }
+  for (const f of fireflies) if (!f.taken) {
+    const tw = 0.7 + Math.sin(time * 6 + f.ph) * 0.3;
+    glow(f.x, f.y, 12, `rgba(220,242,126,${0.4 * tw * f.fade})`);
+    ctx.fillStyle = `rgba(246,255,190,${f.fade})`; ctx.fillRect(f.x - 1.5, f.y - 1.5, 3, 3);
+  }
+  // onsen steam drifts up through the dark
+  for (let r = Math.max(0, Math.floor(camY / T)); r < Math.min(H, Math.ceil((camY + VH) / T) + 1); r++)
+    for (let c = Math.max(0, c0); c < Math.min(W, c1); c++) if (grid[r][c] === 'w') drawSteam(c, r);
+  // shoji screens glow faintly, so their rhythm reads even in the dark
+  const warn = (time % SWAP) > SWAP - 0.35;
+  for (let r = Math.max(0, Math.floor(camY / T)); r < Math.min(H, Math.ceil((camY + VH) / T) + 1); r++)
+    for (let c = Math.max(0, c0); c < Math.min(W, c1); c++) { const ch = grid[r][c]; if (ch === 'A' || ch === 'B') drawScreen(c, r, ch, screenOn(ch), warn); }
+  for (const b of bells) drawBell(b);
+  if (goal) drawGoalLantern();
+  if (showP && state !== 'end') drawFlame();
+  for (const p of particles) { ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillStyle = p.col; ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size); }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  drawOverlay();
+}
+
+function text(str, x, y, size, col, font = 'display', align = 'center', weight = 800) {
+  ctx.font = `${weight} ${size}px ${font === 'display' ? '"Shippori Mincho B1", Georgia, serif' : font === 'mono' ? '"M PLUS 1 Code", Menlo, monospace' : '"Zen Kaku Gothic New", system-ui, sans-serif'}`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillStyle = col; ctx.fillText(str, x, y);
+}
+function fmt(t) { const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(1)}`; }
+
+function drawOverlay() {
+  if (state === 'title') {
+    ctx.fillStyle = 'rgba(8,6,18,0.55)'; ctx.fillRect(0, 0, VW, VH);
+    text('Lantern Wick', VW / 2, VH / 2 - 50, 78, '#f2e6cf');
+    text(`${['One path', 'Two paths', 'Three paths', 'Four paths', 'Five paths', 'Six paths', 'Seven paths', 'Eight paths', 'Nine paths', 'Ten paths', 'Eleven paths', 'Twelve paths', 'Thirteen paths', 'Fourteen paths', 'Fifteen paths', 'Sixteen paths', 'Seventeen paths', 'Eighteen paths', 'Nineteen paths', 'Twenty paths', 'Twenty-one paths', 'Twenty-two paths', 'Twenty-three paths', 'Twenty-four paths', 'Twenty-five paths', 'Twenty-six paths', 'Twenty-seven paths', 'Twenty-eight paths', 'Twenty-nine paths', 'Thirty paths', 'Thirty-one paths', 'Thirty-two paths', 'Thirty-three paths', 'Thirty-four paths', 'Thirty-five paths', 'Thirty-six paths', 'Thirty-seven paths', 'Thirty-eight paths', 'Thirty-nine paths', 'Forty paths', 'Forty-one paths', 'Forty-two paths', 'Forty-three paths', 'Forty-four paths', 'Forty-five paths', 'Forty-six paths', 'Forty-seven paths', 'Forty-eight paths', 'Forty-nine paths', 'Fifty paths', 'Fifty-one paths', 'Fifty-two paths', 'Fifty-three paths', 'Fifty-four paths', 'Fifty-five paths', 'Fifty-six paths', 'Fifty-seven paths', 'Fifty-eight paths', 'Fifty-nine paths'][LEVELS.length - 1] || LEVELS.length + ' paths'} home. Keep the flame alive.`, VW / 2, VH / 2 + 14, 20, '#a59ec0', 'body', 'center', 400);
+    const a = 0.55 + Math.sin(time * 3) * 0.45;
+    text(touchMode ? 'Tap JUMP to light the wick' : 'Press Space to light the wick', VW / 2, VH / 2 + 70, 18, `rgba(255,154,60,${a})`, 'mono', 'center', 700);
+  } else if (state === 'intro' || (state === 'play' && levelTime < 2.2)) {
+    const t = state === 'intro' ? stateT : 0.9 + levelTime;
+    const a = t < 0.4 ? t / 0.4 : t > 2.4 ? Math.max(0, 1 - (t - 2.4) / 0.7) : 1;
+    ctx.globalAlpha = a;
+    text(`Path ${levelIndex + 1} of ${LEVELS.length}`, VW / 2, 78, 14, '#a59ec0', 'mono', 'center', 700);
+    text(LEVELS[levelIndex].name, VW / 2, 112, 38, '#f2e6cf');
+    ctx.globalAlpha = 1;
+  } else if (state === 'clear') {
+    const a = Math.min(1, stateT / 0.4);
+    ctx.fillStyle = `rgba(8,6,18,${0.45 * a})`; ctx.fillRect(0, 0, VW, VH);
+    ctx.globalAlpha = a;
+    text('The torii glows', VW / 2, VH / 2 - 30, 46, '#ffcf7a');
+    const b = best[levelIndex];
+    text(`${fmt(levelTime)}${b && b >= Math.round(levelTime * 10) / 10 ? '  ·  new best' : b ? `  ·  best ${fmt(b)}` : ''}`, VW / 2, VH / 2 + 20, 18, '#f2e6cf', 'mono', 'center', 700);
+    ctx.globalAlpha = 1;
+  } else if (state === 'end') {
+    ctx.fillStyle = 'rgba(8,6,18,0.7)'; ctx.fillRect(0, 0, VW, VH);
+    text('Home before dawn', VW / 2, VH / 2 - 70, 56, '#ffcf7a');
+    text(`${fmt(runTime)}  ·  ${flies} fireflies  ·  snuffed ${deaths}×`, VW / 2, VH / 2 - 6, 20, '#f2e6cf', 'mono', 'center', 700);
+    if (stateT > 1) text(touchMode ? 'Tap JUMP to walk again' : 'Press Space to walk again', VW / 2, VH / 2 + 50, 16, `rgba(255,154,60,${0.55 + Math.sin(time * 3) * 0.45})`, 'mono', 'center', 700);
+  } else if (state === 'paused') {
+    ctx.fillStyle = 'rgba(8,6,18,0.6)'; ctx.fillRect(0, 0, VW, VH);
+    text('Paused', VW / 2, VH / 2 - 14, 48, '#f2e6cf');
+    text(touchMode ? 'Tap JUMP to continue' : 'Esc or Space to continue', VW / 2, VH / 2 + 34, 16, '#a59ec0', 'mono', 'center', 700);
+  } else if (state === 'dead' && stateT > 0.15) {
+    ctx.globalAlpha = Math.min(1, (stateT - 0.15) / 0.2) * Math.max(0, 1 - (stateT - 0.6) / 0.3);
+    text(light <= 0 ? 'The wick went out' : 'Snuffed', VW / 2, VH / 2 - 40, 30, '#f2e6cf');
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ---------- HUD ----------
+const hud = { level: $('hLevel'), bar: $('hBar'), pct: $('hWickPct'), wick: $('hWick'), flies: $('hFlies'), deaths: $('hDeaths'), time: $('hTime') };
+let last = {};
+function setText(el, key, v) { if (last[key] !== v) { last[key] = v; el.textContent = v; } }
+function updateHud() {
+  setText(hud.level, 'lv', `${levelIndex + 1} · ${LEVELS[levelIndex].name}`);
+  const w = Math.round(light);
+  if (last.w !== w) { last.w = w; hud.bar.style.setProperty('--w', w + '%'); hud.pct.textContent = w + '%'; hud.wick.classList.toggle('low', w < 25); }
+  setText(hud.flies, 'f', String(flies));
+  setText(hud.deaths, 'd', String(deaths));
+  setText(hud.time, 't', fmt(levelTime));
+}
+function updatePaths() {
+  const ol = $('paths'); ol.innerHTML = '';
+  LEVELS.forEach((L, i) => {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button'; b.id = 'path' + i; b.disabled = i > unlocked;
+    if (i === levelIndex && state !== 'title') b.setAttribute('aria-current', 'true');
+    const n = document.createElement('span'); n.textContent = `${i + 1} · ${L.name}`;
+    const t = document.createElement('span'); t.className = 'best'; t.textContent = i > unlocked ? 'locked' : best[i] ? 'best ' + fmt(best[i]) : 'not walked';
+    b.append(n, t); b.addEventListener('click', () => { audio(); startRun(i); updatePaths(); });
+    li.append(b); ol.append(li);
+  });
+}
+
+// ---------- input ----------
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump', KeyK: 'jump', ArrowDown: 'down', KeyS: 'down' };
+let touchMode = false;
+window.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLButtonElement && (e.code === 'Space' || e.code === 'Enter')) return;
+  const k = KEYMAP[e.code];
+  if (k) { e.preventDefault(); if (k === 'jump' && !e.repeat) pressJump(); keys[k] = true; return; }
+  if (e.code === 'Enter' && (state === 'title' || state === 'clear' || state === 'end')) { pressJump(); return; }
+  if (e.code === 'KeyR' && state !== 'title' && state !== 'end') { restartLevel(); }
+  if ((e.code === 'Escape' || e.code === 'KeyP') && (state === 'play' || state === 'paused')) { state = state === 'play' ? 'paused' : 'play'; }
+  if (e.code === 'KeyM') toggleSound();
+});
+window.addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (state === 'play') state = 'paused'; });
+canvas.addEventListener('pointerdown', () => { canvas.focus({ preventScroll: true }); if (!touchMode && (state === 'title' || state === 'clear' || state === 'end')) pressJump(); });
+
+function restartLevel() { audio(); spawn = null; loadLevel(levelIndex); state = 'intro'; stateT = 0; }
+function toggleSound() { soundOn = !soundOn; store.set('sound', soundOn); const b = $('bSound'); b.textContent = soundOn ? 'Sound on' : 'Sound off'; b.setAttribute('aria-pressed', String(soundOn)); if (soundOn) audio(); }
+$('bRestart').addEventListener('click', () => { if (state === 'title' || state === 'end') startRun(state === 'end' ? 0 : levelIndex); else restartLevel(); });
+$('bSound').addEventListener('click', toggleSound);
+toggleSound(); toggleSound();
+
+const pad = $('pad');
+function enableTouch() { if (touchMode) return; touchMode = true; pad.hidden = false; }
+if (window.matchMedia && matchMedia('(pointer: coarse)').matches) enableTouch();
+window.addEventListener('touchstart', enableTouch, { passive: true, once: true });
+pad.querySelectorAll('button').forEach(b => {
+  const k = b.dataset.k;
+  const down = e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); b.classList.add('on'); if (k === 'jump') pressJump(); keys[k] = true; };
+  const up = e => { e.preventDefault(); b.classList.remove('on'); keys[k] = false; };
+  b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
+  b.addEventListener('contextmenu', e => e.preventDefault());
+});
+
+// ---------- loop ----------
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const want = Math.max(1, Math.min(2, (canvas.clientWidth || VW) * dpr / VW));
+  if (Math.abs(want - S) < 0.01 && canvas.width === Math.round(VW * S)) return;
+  S = want; canvas.width = Math.round(VW * S); canvas.height = Math.round(VH * S); dk.width = canvas.width; dk.height = canvas.height;
+  if (W) buildTileLayer();
+}
+window.addEventListener('resize', resize);
+
+let acc = 0, prev = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - prev) / 1000 || 0); prev = now;
+  if (state !== 'paused') { acc += dt; while (acc >= STEP) { step(STEP); acc -= STEP; } }
+  render(); updateHud();
+  requestAnimationFrame(frame);
+}
+
+function boot(data) {
+  data = data || {};
+  resize();
+  if (typeof data.deaths === 'number') { deaths = data.deaths; flies = data.flies || 0; runTime = data.runTime || 0; }
+  loadLevel(Math.min(LEVELS.length - 1, data.level || 0));
+  state = data.state && data.state !== 'title' ? 'intro' : 'title';
+  if (data.state === 'end') state = 'end';
+  updatePaths();
+  requestAnimationFrame(t => { prev = t; requestAnimationFrame(frame); });
+}
+const hot = window.claude && window.claude.hot;
+if (hot && hot.snapshot) hot.snapshot(() => ({ level: levelIndex, deaths, flies, runTime, state }));
+if (hot && hot.ready) hot.ready(boot); else boot(hot && hot.data ? hot.data : {});
+})();
+</script>

@@ -1,0 +1,1470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thunderhoof</title>
+<style>
+  html,body{margin:0;height:100%;background:#120a06;overflow:hidden}
+  body{display:flex;align-items:center;justify-content:center}
+  #wrap{position:relative}
+  #wrap canvas{position:absolute;left:0;top:0;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+  #nogl{color:#f3d58a;font:20px Georgia,serif;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="gl"></canvas><canvas id="c"></canvas></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/GammaCorrectionShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+if (!window.THREE) document.body.innerHTML = '<div id="nogl">Thunderhoof needs an internet connection the first time it loads (for its 3D engine).<br>Connect and refresh, or play the 2D version: index-2d.html</div>';
+// ===== THUNDERHOOF — a bull riding showdown =====
+const cv = document.getElementById('c'), ctx = cv.getContext('2d'), gl = document.getElementById('gl');
+const wrap = document.getElementById('wrap');
+let renderer = null;
+const W = 960, H = 540, GY = 440;
+const FONT = '"Rockwell","Rockwell Extra Bold","Georgia",serif';
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = devicePixelRatio || 1;
+  cv.style.width = W * scale + 'px'; cv.style.height = H * scale + 'px';
+  wrap.style.width = W * scale + 'px'; wrap.style.height = H * scale + 'px';
+  if (renderer) {
+    renderer.setPixelRatio(Math.min(dpr, 2)); renderer.setSize(W * scale, H * scale);
+    if (composer) { composer.setPixelRatio(Math.min(dpr, 2)); composer.setSize(W * scale, H * scale); }
+  }
+  cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+const BULLS = [
+  { name: 'Dust Devil',       diff: 1, body: '#8a5530', dark: '#4a2a14', patch: '#efe2c8', pattern: 'spots',   horn: '#efe2c8', eye: '#1a1010', muzzle: '#6e4a40' },
+  { name: 'Midnight Rodeo',   diff: 2, body: '#2b2727', dark: '#0a0909', patch: '#e6e6e6', pattern: 'socks',   horn: '#d9ccb0', eye: '#1a1010', muzzle: '#3a3030' },
+  { name: 'Cyclone Pete',     diff: 3, body: '#a86c3a', dark: '#5a3619', patch: '#fbf6ec', pattern: 'belly',   horn: '#f2e6cc', eye: '#1a1010', muzzle: '#c99a8a' },
+  { name: 'Boneshaker',       diff: 4, body: '#bdb4a6', dark: '#6f665b', patch: '#3b3530', pattern: 'brindle', horn: '#ece2cc', eye: '#1a1010', muzzle: '#8a7a70' },
+  { name: 'El Diablo Grande', diff: 5, body: '#6a1a12', dark: '#260604', patch: '#140808', pattern: 'saddle',  horn: '#2a2522', eye: '#ff3b1f', muzzle: '#3a1210' },
+  { name: 'Biscuit',          diff: 1, body: '#e0c79a', dark: '#a8875a', patch: '#fff8ea', pattern: 'roan',    horn: '#fff4dc', eye: '#1a1010', muzzle: '#d9a89a' },
+  { name: 'Moo-ve Over',      diff: 1, body: '#3a2a22', dark: '#1a120e', patch: '#f4efe6', pattern: 'paint',   horn: '#e8dcc0', eye: '#1a1010', muzzle: '#d8b0a4' },
+  { name: 'Sweet Tea',        diff: 2, body: '#b4562e', dark: '#6a2c12', patch: '#fbf4e8', pattern: 'paint',   horn: '#efe2c8', eye: '#1a1010', muzzle: '#d9a090' },
+  { name: 'Grumpy Gus',       diff: 2, body: '#6d6a64', dark: '#3a3834', patch: '#2a2826', pattern: 'stripe',  horn: '#e6dac0', eye: '#1a1010', muzzle: '#4a4440' },
+  { name: 'Hay Fever',        diff: 3, body: '#c88a3c', dark: '#7a4c18', patch: '#fff1d6', pattern: 'stripe',  horn: '#f6ead0', eye: '#1a1010', muzzle: '#b07868' },
+  { name: 'Bad Moon',         diff: 4, body: '#1e1b1b', dark: '#060505', patch: '#f4f0e8', pattern: 'baldy',   horn: '#cfc2a4', eye: '#3a1010', muzzle: '#c89a90' },
+  { name: 'Rattlesnake Jake', diff: 4, body: '#8a6a3a', dark: '#4a3416', patch: '#2a1c0c', pattern: 'brindle', horn: '#e0d2b0', eye: '#d8a020', muzzle: '#5a4030' },
+  { name: 'Tornado Alley',    diff: 5, body: '#5c6670', dark: '#262c32', patch: '#d8dee4', pattern: 'roan',    horn: '#2a2826', eye: '#7fd0ff', muzzle: '#3a3a40' },
+  { name: 'Butterbean',       diff: 1, body: '#1e1c1c', dark: '#080707', patch: '#f6f2ea', pattern: 'belt',    horn: '#e8dcc0', eye: '#1a1010', muzzle: '#4a3a36' },
+  { name: "Lil' Smokey",      diff: 1, body: '#8c8a88', dark: '#4a4846', patch: '#c8c6c2', pattern: 'dapple',  horn: '#efe6d4', eye: '#1a1010', muzzle: '#6a5a58', hornSize: 0.7 },
+  { name: 'Pickle Juice',     diff: 2, body: '#c4a066', dark: '#7a5c2c', patch: '#2e2216', pattern: 'mask',    horn: '#f0e4c8', eye: '#1a1010', muzzle: '#3a2a20' },
+  { name: 'Sir Loin',         diff: 2, body: '#9a3a22', dark: '#561c0e', patch: '#fbf3e6', pattern: 'paint',   horn: '#f2e6cc', eye: '#1a1010', muzzle: '#d8a090', hornSize: 1.15 },
+  { name: "Ol' Rusty",        diff: 3, body: '#a2502a', dark: '#5a2810', patch: '#d88a58', pattern: 'dapple',  horn: '#efe2c8', eye: '#1a1010', muzzle: '#6a3a2a', hornSize: 1.3 },
+  { name: 'Banjo Bill',       diff: 3, body: '#7a2c1c', dark: '#3e140a', patch: '#f6efe2', pattern: 'belt',    horn: '#e6d8b8', eye: '#1a1010', muzzle: '#4a2018' },
+  { name: 'Scrapyard',        diff: 4, body: '#7c7a76', dark: '#3a3836', patch: '#151414', pattern: 'mask',    horn: '#d8cdb4', eye: '#ffb020', muzzle: '#1e1c1c', hornSize: 1.2 },
+  { name: 'Hurricane Hank',   diff: 4, body: '#4a3020', dark: '#1e120a', patch: '#e8d6b4', pattern: 'spots',   horn: '#efe2c8', eye: '#1a1010', muzzle: '#3a2418', hornSize: 1.1 },
+  { name: 'Nightmare Express',diff: 5, body: '#151313', dark: '#030303', patch: '#7a1010', pattern: 'belt',    horn: '#1a1716', eye: '#ff2a2a', muzzle: '#2a1010', hornSize: 1.4 },
+  { name: 'Volcano',          diff: 5, body: '#2a1a14', dark: '#0c0605', patch: '#e2581a', pattern: 'saddle',  horn: '#3a2a22', eye: '#ff8a1a', muzzle: '#1e100c', hornSize: 1.25 },
+  { name: 'Cupcake',          diff: 1, body: '#8a5a3a', dark: '#4a2c16', patch: '#fbf5ea', pattern: 'half',     horn: '#f2e6cc', eye: '#1a1010', muzzle: '#e0aaa0', style: 'bucker', hornSize: 0.8 },
+  { name: 'Tater Tot',        diff: 1, body: '#e6cfa2', dark: '#a88a58', patch: '#7a4a24', pattern: 'freckles', horn: '#fff4dc', eye: '#1a1010', muzzle: '#d9a89a', style: 'dropper' },
+  { name: 'Chili Dog',        diff: 2, body: '#1c1818', dark: '#060505', patch: '#a8321c', pattern: 'half',     horn: '#e6d8b8', eye: '#1a1010', muzzle: '#4a2a24', style: 'spinner' },
+  { name: 'Mud Pie',          diff: 2, body: '#5a3a26', dark: '#2a180c', patch: '#2a1a10', pattern: 'freckles', horn: '#e8dcc0', eye: '#1a1010', muzzle: '#3a2418', style: 'bucker' },
+  { name: 'Firecracker',      diff: 3, body: '#b0381e', dark: '#5e180a', patch: '#fff8ea', pattern: 'star',     horn: '#f2e6cc', eye: '#1a1010', muzzle: '#d89a8a', style: 'spinner', hornSize: 1.1 },
+  { name: 'Prickly Pear',     diff: 3, body: '#c49a5a', dark: '#7a5a2a', patch: '#f8efdc', pattern: 'half',     horn: '#efe2c8', eye: '#1a1010', muzzle: '#b08070', style: 'dropper' },
+  { name: 'Bulldozer',        diff: 4, body: '#5e5c5a', dark: '#2a2928', patch: '#1a1918', pattern: 'half',     horn: '#d8cdb4', eye: '#1a1010', muzzle: '#2a2626', style: 'dropper', hornSize: 1.2 },
+  { name: 'Twister',          diff: 4, body: '#1e1b1b', dark: '#060505', patch: '#f4f0e8', pattern: 'star',     horn: '#cfc2a4', eye: '#1a1010', muzzle: '#3a2a28', style: 'spinner', hornSize: 1.15 },
+  { name: 'Doomsday',         diff: 5, body: '#1a1414', dark: '#050303', patch: '#c0281a', pattern: 'freckles', horn: '#2a2220', eye: '#ff2a2a', muzzle: '#2a1010', style: 'bucker', hornSize: 1.35 },
+  { name: 'Graveyard Shift',  diff: 5, body: '#141414', dark: '#040404', patch: '#e8e2d2', pattern: 'half',     horn: '#e8e2d2', eye: '#9aff6a', muzzle: '#1e1e1e', style: 'spinner', hornSize: 1.3 },
+  { name: 'Marshmallow',      diff: 1, body: '#f4efe6', dark: '#c8bca8', patch: '#d8b48a', pattern: 'fade',     horn: '#fff6e4', eye: '#1a1010', muzzle: '#e8b0a8', style: 'bucker', hornSize: 0.75 },
+  { name: 'Peanut',           diff: 1, body: '#c89a5c', dark: '#7a5a2c', patch: '#5a3a18', pattern: 'rosettes', horn: '#f2e6cc', eye: '#1a1010', muzzle: '#9a6a50', style: 'dropper' },
+  { name: 'Bandit',           diff: 2, body: '#9a9894', dark: '#55534f', patch: '#121212', pattern: 'mask',     horn: '#e6dac0', eye: '#1a1010', muzzle: '#1e1c1c', style: 'spinner' },
+  { name: 'Barcode',          diff: 2, body: '#f2efe8', dark: '#b8b2a8', patch: '#151515', pattern: 'zebra',    horn: '#e8dcc0', eye: '#1a1010', muzzle: '#3a3030', style: 'bucker' },
+  { name: 'Sundown',          diff: 3, body: '#d8862e', dark: '#8a4a14', patch: '#3a1a0a', pattern: 'fade',     horn: '#f2e6cc', eye: '#1a1010', muzzle: '#6a3a24', style: 'spinner', hornSize: 1.1 },
+  { name: 'Jackpot',          diff: 3, body: '#d4a845', dark: '#8a6a1c', patch: '#4a3010', pattern: 'rosettes', horn: '#fff1cc', eye: '#1a1010', muzzle: '#7a5030', style: 'dropper', hornSize: 1.15 },
+  { name: 'Ironside',         diff: 4, body: '#6a6c70', dark: '#2c2e32', patch: '#141516', pattern: 'zebra',    horn: '#cfc6b0', eye: '#9ad0ff', muzzle: '#222', style: 'bucker', hornSize: 1.2 },
+  { name: 'Wildfire',         diff: 4, body: '#c43a14', dark: '#6a1a06', patch: '#160604', pattern: 'fade',     horn: '#2a2220', eye: '#ffb020', muzzle: '#2a100a', style: 'spinner', hornSize: 1.2 },
+  { name: 'Black Hole',       diff: 5, body: '#2a1a3a', dark: '#0a0610', patch: '#050308', pattern: 'fade',     horn: '#1a1420', eye: '#c060ff', muzzle: '#1a1020', style: 'dropper', hornSize: 1.35 },
+  { name: 'Lightning Rod',    diff: 5, body: '#181818', dark: '#050505', patch: '#ffd21a', pattern: 'zebra',    horn: '#ffd21a', eye: '#ffe84d', muzzle: '#202020', style: 'spinner', hornSize: 1.4 },
+  { name: 'Jellybean',        diff: 1, body: '#f0e2c8', dark: '#bca888', patch: '#8a4a2a', pattern: 'polka',    horn: '#fff4dc', eye: '#1a1010', muzzle: '#e8a8a0', style: 'bucker', hornSize: 0.7 },
+  { name: 'Pancake',          diff: 1, body: '#e8c890', dark: '#a8804a', patch: '#8a5420', pattern: 'fade',     horn: '#fff1d6', eye: '#1a1010', muzzle: '#d8a090', style: 'dropper' },
+  { name: 'Domino',           diff: 2, body: '#f6f3ec', dark: '#bdb6aa', patch: '#121212', pattern: 'polka',    horn: '#e8dcc0', eye: '#1a1010', muzzle: '#2a2626', style: 'spinner' },
+  { name: 'Gravy',            diff: 2, body: '#7a4e2c', dark: '#3e2410', patch: '#a8784a', pattern: 'dapple',   horn: '#efe2c8', eye: '#1a1010', muzzle: '#4a2c1c', style: 'bucker' },
+  { name: 'Stardust',         diff: 3, body: '#1c2244', dark: '#0a0c1c', patch: '#ffffff', pattern: 'galaxy',   horn: '#d8d0ff', eye: '#7ad8ff', muzzle: '#1a1a2a', style: 'spinner', hornSize: 1.1 },
+  { name: 'Rodeo Clown',      diff: 3, body: '#f6f0e6', dark: '#c0b6a6', patch: '#c4281c', pattern: 'polka',    horn: '#ffe14a', eye: '#1a1010', muzzle: '#e05050', style: 'dropper' },
+  { name: 'Cannonball',       diff: 4, body: '#1a1a1a', dark: '#050505', patch: '#7a7c80', pattern: 'polka',    horn: '#cfc6b0', eye: '#ff6a2a', muzzle: '#202020', style: 'bucker', hornSize: 1.25 },
+  { name: 'Avalanche',        diff: 4, body: '#f4f6f8', dark: '#a8b4c0', patch: '#6c7c8c', pattern: 'fade',     horn: '#dfe8f0', eye: '#4ac0ff', muzzle: '#9aa4b0', style: 'dropper', hornSize: 1.2 },
+  { name: 'Supernova',        diff: 5, body: '#120a1a', dark: '#040206', patch: '#ffd84d', pattern: 'galaxy',   horn: '#ffd84d', eye: '#ffd84d', muzzle: '#1a1020', style: 'spinner', hornSize: 1.35 },
+  { name: 'Golden Ticket',    diff: 5, body: '#d8a830', dark: '#7a5810', patch: '#fff0a0', pattern: 'none',     horn: '#fff6c8', eye: '#ff3b1f', muzzle: '#8a6420', style: 'bucker', hornSize: 1.4, metal: true },
+  { name: 'Thunderhoof',      diff: 5, body: '#2a2422', dark: '#0a0808', patch: '#d4a845', pattern: 'stripe',  horn: '#d4a845', eye: '#ffd84d', muzzle: '#2a1a14' },
+];
+
+// ---------- audio ----------
+let AC = null, noiseBuf = null;
+function audio() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(f, d, type, v, slide) {
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), n = a.currentTime;
+  o.type = type; o.frequency.setValueAtTime(f, n);
+  if (slide) o.frequency.exponentialRampToValueAtTime(slide, n + d);
+  g.gain.setValueAtTime(v, n); g.gain.exponentialRampToValueAtTime(0.001, n + d);
+  o.connect(g).connect(a.destination); o.start(n); o.stop(n + d);
+}
+function noise(d, v, f, q) {
+  const a = audio(); if (!a) return;
+  if (!noiseBuf) {
+    noiseBuf = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
+    const ch = noiseBuf.getChannelData(0);
+    for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+  }
+  const s = a.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+  const bf = a.createBiquadFilter(); bf.type = 'bandpass'; bf.frequency.value = f; bf.Q.value = q || 1;
+  const g = a.createGain(), n = a.currentTime;
+  g.gain.setValueAtTime(0.0001, n);
+  g.gain.exponentialRampToValueAtTime(v, n + Math.min(0.3, d * 0.3));
+  g.gain.exponentialRampToValueAtTime(0.0001, n + d);
+  s.connect(bf).connect(g).connect(a.destination); s.start(n); s.stop(n + d + 0.05);
+}
+const sfx = {
+  thud() { noise(0.3, 0.6, 120, 0.7); tone(90, 0.3, 'sine', 0.5, 40); },
+  hoof() { noise(0.09, 0.12, 220, 1.2); },
+  cheer(d = 2.5, v = 0.25) { noise(d, v, 1300, 0.5); noise(d, v * 0.6, 2600, 0.8); },
+  groan() { noise(1.4, 0.2, 500, 0.6); },
+  buzzer() { tone(180, 0.9, 'sawtooth', 0.14); tone(187, 0.9, 'square', 0.07); },
+  gate() { tone(620, 0.35, 'triangle', 0.18, 300); noise(0.25, 0.3, 2600, 2); },
+  cue() { tone(880, 0.08, 'square', 0.05); },
+  good() { tone(660, 0.1, 'triangle', 0.12); setTimeout(() => tone(990, 0.15, 'triangle', 0.12), 80); },
+};
+// ---------- music: a little western band, synthesized live ----------
+let muted = false;
+try { muted = localStorage.getItem('cow_music_off') === '1'; } catch (e) {}
+const MUSIC_VOL = 0.4;
+const MUSIC = { gain: null, bus: null, next: 0, step: 0, theme: null, loops: 0 };
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const _ = -1;   // in a melody: keep holding the previous note
+// bass [root, fifth below], guitar strum voicing, banjo's upper triad
+const CH = {
+  G: { bass: [43, 38], strum: [55, 59, 62, 67], up: [67, 71, 74] },
+  C: { bass: [48, 43], strum: [55, 60, 64, 67], up: [67, 72, 76] },
+  D: { bass: [50, 45], strum: [57, 62, 66, 69], up: [66, 69, 74] },
+};
+const THEMES = {
+  // laid-back shuffle for the menu and the chute
+  menu: { bpm: 96, swing: 0.64, chords: 'GCGDGCDG', strum: [2, 6],
+    mel: [74, _, 71, _, 74, _, 79, _, 76, _, _, _, 72, _, 76, _, 74, _, 71, _, 67, _, 69, 71, 69, _, _, _, 66, _, 69, _,
+          71, _, 74, _, 79, _, 78, 76, 76, _, 79, _, 76, _, 72, _, 74, _, _, 72, 71, _, 69, _, 67, _, _, _, _, _, 0, 0] },
+  // flat-out breakdown once the gate swings open
+  ride: { bpm: 168, swing: 0.5, chords: 'GGCGDDGG', strum: [1, 3, 5, 7],
+    mel: [79, 78, 76, 74, 71, 74, 67, 71, 74, _, 71, _, 74, 76, 74, 71, 72, 76, 79, 76, 72, 76, 79, 81, 83, _, 79, _, 74, _, 71, _,
+          69, 74, 78, 81, 78, 74, 69, 74, 78, _, 76, _, 74, _, 72, _, 71, 74, 79, 83, 81, 79, 78, 76, 79, _, _, _, 74, _, 67, _] },
+};
+const ROLL = [0, 1, 2, 'd', 1, 2, 'd', 2];   // banjo forward roll; 'd' is the high drone string
+
+function setMuted(m) {
+  muted = m;
+  try { localStorage.setItem('cow_music_off', m ? '1' : '0'); } catch (e) {}
+  if (MUSIC.gain) MUSIC.gain.gain.setTargetAtTime(m ? 0 : MUSIC_VOL, AC.currentTime, 0.1);
+}
+function route(node, pan = 0) {
+  if (AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = pan; node.connect(p).connect(MUSIC.bus); }
+  else node.connect(MUSIC.bus);
+}
+
+// Karplus–Strong plucked strings: a burst of noise ringing around a tiny delay loop.
+// Each note is rendered once into a buffer and reused.
+const pluckCache = {};
+function pluck(midi, kind) {
+  const key = kind + midi;
+  if (pluckCache[key]) return pluckCache[key];
+  const sr = AC.sampleRate, N = Math.max(2, Math.round(sr / mtof(midi)));
+  const [decay, bright, dur] = { banjo: [0.993, 0.9, 0.8], guitar: [0.996, 0.55, 1.2], bass: [0.9985, 0.22, 1.5] }[kind];
+  const len = Math.floor(sr * dur), buf = AC.createBuffer(1, len, sr), out = buf.getChannelData(0), ring = new Float32Array(N);
+  let lp = 0;
+  for (let i = 0; i < N; i++) { lp += (Math.random() * 2 - 1 - lp) * bright; ring[i] = lp; }   // softer pick = smoother noise
+  for (let i = 0, k = 0; i < len; i++) {
+    const a = ring[k], b = ring[(k + 1) % N];
+    out[i] = a; ring[k] = decay * 0.5 * (a + b); k = (k + 1) % N;
+  }
+  for (let i = 0; i < 400 && i < len; i++) out[len - 1 - i] *= i / 400;   // no click at the tail
+  return (pluckCache[key] = { buf, rate: mtof(midi) / (sr / N) });     // playbackRate fixes the rounding in N
+}
+function playPluck(midi, t, kind, vol, pan) {
+  const p = pluck(midi, kind), src = AC.createBufferSource(), g = AC.createGain();
+  src.buffer = p.buf; src.playbackRate.value = p.rate; g.gain.value = vol;
+  src.connect(g); route(g, pan); src.start(t);
+}
+// bowed fiddle: two detuned saws through a body resonance, vibrato fading in
+function fiddle(midi, t, dur, vol) {
+  const f = mtof(midi), g = AC.createGain(), lp = AC.createBiquadFilter(), body = AC.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 2800; lp.Q.value = 1.1;
+  body.type = 'peaking'; body.frequency.value = 950; body.gain.value = 6; body.Q.value = 1.2;
+  const vib = AC.createOscillator(), vibG = AC.createGain();
+  vib.frequency.value = 5.6;
+  vibG.gain.setValueAtTime(0, t); vibG.gain.linearRampToValueAtTime(f * 0.007, t + Math.min(0.3, dur));
+  vib.connect(vibG);
+  for (const det of [-5, 5]) {
+    const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+    vibG.connect(o.frequency); o.connect(lp); o.start(t); o.stop(t + dur + 0.2);
+  }
+  lp.connect(body).connect(g);
+  const att = Math.min(0.05, dur * 0.3);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + att);
+  g.gain.linearRampToValueAtTime(vol * 0.8, t + Math.max(att + 0.01, dur));
+  g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.15);
+  vib.start(t); vib.stop(t + dur + 0.2);
+  route(g, 0.05);
+}
+function drumHit(t, kind, vol = 1) {
+  if (kind === 'kick') {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+    g.gain.setValueAtTime(0.75 * vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(g); route(g); o.start(t); o.stop(t + 0.32); return;
+  }
+  const src = AC.createBufferSource(); src.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = kind === 'snare' ? 2200 : 4500; f.Q.value = 0.7;
+  const g = AC.createGain(), d = kind === 'snare' ? 0.18 : 0.06;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime((kind === 'snare' ? 0.24 : 0.07) * vol, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  src.connect(f).connect(g); route(g, kind === 'brush' ? -0.2 : 0); src.start(t, Math.random()); src.stop(t + d + 0.02);
+}
+// a short decaying-noise "room" so the band sounds like it's in the arena
+function makeVerb() {
+  const sr = AC.sampleRate, len = Math.floor(sr * 2.2), ir = AC.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+  const cv = AC.createConvolver(); cv.buffer = ir; return cv;
+}
+// little musical punctuation for the big moments
+function musicStinger(kind) {
+  if (!AC || !MUSIC.gain) return;
+  const t = AC.currentTime + 0.02;
+  if (kind === 'win') {
+    [67, 71, 74, 79, 83].forEach((n, i) => playPluck(n, t + i * 0.07, 'banjo', 0.4, 0.3));
+    fiddle(86, t + 0.35, 0.9, 0.15);
+  } else {
+    [58, 57, 56, 55].forEach((n, i) => fiddle(n, t + i * 0.3, i === 3 ? 1.0 : 0.26, 0.13));   // wah, wah, wah, waaah
+  }
+}
+function musicTick() {
+  if (!AC || AC.state !== 'running') return;
+  if (!MUSIC.gain) {
+    if (!noiseBuf) noise(0.02, 0.0002, 1000);   // builds the shared noise buffer
+    MUSIC.bus = AC.createGain();
+    const comp = AC.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3;
+    const verb = makeVerb(), wet = AC.createGain(); wet.gain.value = 0.25;
+    MUSIC.gain = AC.createGain(); MUSIC.gain.gain.value = muted ? 0 : MUSIC_VOL;
+    MUSIC.bus.connect(comp); MUSIC.bus.connect(verb).connect(wet).connect(comp);
+    comp.connect(MUSIC.gain).connect(AC.destination);
+    MUSIC.next = AC.currentTime + 0.1;
+  }
+  const want = G.mode === 'ride' && R.state === 'on' ? 'ride' : 'menu';
+  if (MUSIC.next < AC.currentTime) MUSIC.next = AC.currentTime + 0.05;   // tab was asleep
+  while (MUSIC.next < AC.currentTime + 0.2) {
+    // switch songs on a beat so the band never stumbles
+    if (MUSIC.theme !== want && MUSIC.step % 2 === 0) { MUSIC.theme = want; MUSIC.step = 0; MUSIC.loops = 0; }
+    const th = THEMES[MUSIC.theme], q = 60 / th.bpm, ride = MUSIC.theme === 'ride';
+    const st = MUSIC.step % 64, bar = st >> 3, e8 = st % 8;
+    const ch = CH[th.chords[bar]], nextCh = CH[th.chords[(bar + 1) % 8]];
+    const t = MUSIC.next, dur8 = e8 % 2 ? q * (1 - th.swing) : q * th.swing;
+    const lead = !ride || MUSIC.loops % 2 === 0;   // in the ride the banjo takes every other chorus
+
+    // upright bass: root and fifth, walking up into the next chord on the shuffle
+    if (e8 === 0) playPluck(ch.bass[0], t, 'bass', 0.95, -0.05);
+    if (e8 === 4) playPluck(ch.bass[1], t, 'bass', 0.8, -0.05);
+    if (!ride && e8 === 6) playPluck(nextCh.bass[0] - 1, t, 'bass', 0.55, -0.05);
+    if (ride && (e8 === 2 || e8 === 6)) playPluck(ch.bass[e8 === 2 ? 0 : 1] + 12, t, 'bass', 0.3, -0.05);
+    // rhythm guitar "chick" on the off-beats
+    if (th.strum.includes(e8)) ch.strum.forEach((n, i) => playPluck(n, t + i * 0.012, 'guitar', ride ? 0.15 : 0.19, -0.45));
+    // banjo rolling underneath (or out front)
+    const r = ROLL[e8];
+    playPluck(r === 'd' ? 79 : ch.up[r], t, 'banjo', ride ? (lead ? 0.2 : 0.34) : 0.1, 0.45);
+    if (ride && !lead && e8 % 2 === 1) playPluck(ch.up[(e8 >> 1) % 3] + 12, t + dur8 / 2, 'banjo', 0.18, 0.5);
+    // fiddle carries the tune
+    const m = th.mel[st];
+    if (m > 0 && lead) { let n = 1; while (th.mel[(st + n) % 64] === _ && n < 8) n++; fiddle(m, t, n * q / 2 * 0.95, ride ? 0.12 : 0.1); }
+    // train-beat brushes when riding, a soft backbeat otherwise
+    if (ride) {
+      if (e8 === 0 || e8 === 4) drumHit(t, 'kick');
+      drumHit(t, 'brush', e8 % 2 ? 0.6 : 1);
+      if (e8 === 2 || e8 === 6) drumHit(t, 'snare');
+    } else if (e8 === 2 || e8 === 6) drumHit(t, 'brush', 1.4);
+
+    MUSIC.next += dur8; MUSIC.step++;
+    if (MUSIC.step % 64 === 0) MUSIC.loops++;
+  }
+}
+const SOUND_BTN = { x: W - 28, y: 86, r: 15 };
+function drawSoundBtn() {
+  const b = SOUND_BTN;
+  b.y = G.mode === 'ride' ? 86 : 28;   // tucks under the grip meter while riding
+  ctx.fillStyle = 'rgba(12,8,6,.7)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#d4a845'; ctx.lineWidth = 1.5; ctx.stroke();
+  text('♪', b.x, b.y + 1, 17, muted ? 'rgba(255,255,255,.35)' : '#f3d58a');
+  if (muted) { ctx.strokeStyle = '#ff5a4a'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(b.x - 9, b.y + 9); ctx.lineTo(b.x + 9, b.y - 9); ctx.stroke(); }
+  if (!isTouch) text('M', b.x, b.y + 25, 10, 'rgba(255,255,255,.5)');
+}
+
+
+// ---------- input ----------
+const keys = {}, tHeld = {}, ptr = {};
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+  Space: 'grip', ArrowUp: 'grip', KeyW: 'grip', ArrowDown: 'deep', KeyS: 'deep' };
+let isTouch = matchMedia('(pointer: coarse)').matches;
+addEventListener('keydown', e => {
+  const k = KEYMAP[e.code];
+  if (k || e.code === 'Enter' || e.code === 'KeyE') e.preventDefault();
+  audio();
+  if (e.repeat) return;
+  if (k) keys[k] = true;
+  if (e.code === 'KeyM') setMuted(!muted);
+  if (G.mode === 'menu') {
+    const n = /^Digit([1-5])$/.exec(e.code);
+    if (n) setPlayers(+n[1]);
+    if (k === 'left') setPlayers(G.players - 1);
+    if (k === 'right') setPlayers(G.players + 1);
+  }
+  if ((e.code === 'Enter' || e.code === 'KeyE') && canJump()) jumpOff();
+  else if (e.code === 'Space' || e.code === 'Enter') advance();
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; for (const k in tHeld) tHeld[k] = 0; });
+const held = n => !!keys[n] || tHeld[n] > 0;
+
+const JUMP_BTN = { x: W / 2 - 100, y: 392, w: 200, h: 50 };
+const BTNS = [
+  { id: 'left',  x: 16,  y: 448, w: 140, h: 80, label: '◀ LEAN' },
+  { id: 'deep',  x: 166, y: 448, w: 140, h: 80, label: 'SIT ▼' },
+  { id: 'grip',  x: 654, y: 448, w: 140, h: 80, label: 'GRIP' },
+  { id: 'right', x: 804, y: 448, w: 140, h: 80, label: 'LEAN ▶' },
+];
+function toLogical(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; }
+cv.addEventListener('pointerdown', e => {
+  audio();
+  if (e.pointerType === 'touch') isTouch = true;
+  const p = toLogical(e);
+  const riding = G.mode === 'ride' && R.state === 'on';
+  const j = JUMP_BTN;
+  if (canJump() && p.x >= j.x && p.x <= j.x + j.w && p.y >= j.y && p.y <= j.y + j.h) { jumpOff(); e.preventDefault(); return; }
+  if (Math.hypot(p.x - SOUND_BTN.x, p.y - SOUND_BTN.y) < SOUND_BTN.r + 6) { setMuted(!muted); e.preventDefault(); return; }
+  if (G.mode === 'menu') {
+    const pb = PLAYER_BTNS.find(b => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h);
+    if (pb) { setPlayers(pb.n); e.preventDefault(); return; }
+  }
+  const btn = riding && isTouch ? BTNS.find(b => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) : null;
+  if (btn) { ptr[e.pointerId] = btn.id; tHeld[btn.id] = (tHeld[btn.id] || 0) + 1; }
+  else advance();
+  e.preventDefault();
+});
+function release(e) { const id = ptr[e.pointerId]; if (id) { tHeld[id] = Math.max(0, tHeld[id] - 1); delete ptr[e.pointerId]; } }
+cv.addEventListener('pointerup', release);
+cv.addEventListener('pointercancel', release);
+
+// ---------- game state ----------
+let best = 0;
+try { best = +localStorage.getItem('cow_8sec_best') || 0; } catch (e) {}
+const G = { mode: 'menu', round: 0, gate: 1, opening: false, resT: 0, excite: 0.2,
+  players: 1, cur: 0, all: [[]],
+  get results() { return this.all[this.cur]; } };
+const PCOLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#b06ce0'];
+const pname = i => 'PLAYER ' + (i + 1);
+const totalOf = list => list.reduce((s, r) => s + (r.score || 0), 0);
+const PLAYER_BTNS = [1, 2, 3, 4, 5].map((n, i) => ({ n, x: W / 2 - 30 + i * 62, y: 428, w: 54, h: 38 }));
+function setPlayers(n) { G.players = clamp(n, 1, 5); sfx.cue(); }
+let R = newRide();
+const parts = [], msgs = [];
+let T = 0;
+
+function newRide() {
+  return { t: 0, wt: 0, bal: 0, vel: 0, grip: 1, next: 1.2, tel: null, spin: null, spinPhase: 0,
+    ph: 0, pitch: 0, pitchV: 0, kick: 0, hop: 0, bx: 140, state: 'chute', devSum: 0,
+    deep: 0, bucks: 0, spins: 0, drops: 0, lurch: 0, lurchV: 0, whipLeft: 0, rag: null, endT: 0, finalT: 0, score: null,
+    qualified: false, base: null, bonus: 0 };
+}
+// signature styles change how often a bull bucks, drops or whips you side to side
+const STYLES = {
+  mixed:   { buck: 0.55, drop: 0.25, label: 'A little bit of everything' },
+  bucker:  { buck: 0.75, drop: 0.15, label: 'Big straight bucks' },
+  dropper: { buck: 0.35, drop: 0.5,  label: 'Loves to drop his front end' },
+  spinner: { buck: 0.4,  drop: 0.2,  label: 'Whips you left and right' },
+};
+for (const [n, st] of [['Cyclone Pete', 'spinner'], ['Tornado Alley', 'spinner'], ['Hurricane Hank', 'spinner'], ['Boneshaker', 'bucker'],
+  ['Nightmare Express', 'bucker'], ['Bad Moon', 'dropper'], ['Volcano', 'dropper'], ['Rattlesnake Jake', 'spinner'], ['Biscuit', 'bucker']]) {
+  BULLS.find(b => b.name === n).style = st;
+}
+const TOUR_LEN = 5;
+// each tour draws one bull from every rank, so no two tours are the same
+function pickTour() {
+  const t = [];
+  for (let r = 1; r <= TOUR_LEN; r++) { const pool = BULLS.filter(b => b.diff === r); t.push(pool[Math.floor(Math.random() * pool.length)]); }
+  return t;
+}
+G.tour = pickTour();
+const bull = () => G.tour[Math.min(G.round, TOUR_LEN - 1)];
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const q4 = v => Math.round(v * 4) / 4;
+// every second past the 8-second whistle is worth more than the last
+const overtimeBonus = ot => q4(ot * 1.5 + ot * ot * 0.15);
+const canJump = () => G.mode === 'ride' && R.state === 'on' && R.qualified;
+
+function advance() {
+  if (G.mode === 'menu') {
+    G.round = 0; G.cur = 0; G.tour = pickTour();
+    G.all = Array.from({ length: G.players }, () => []);
+    startChute();
+  }
+  else if (G.mode === 'chute' && !G.opening) { G.opening = true; sfx.gate(); }
+  else if (G.mode === 'result' && G.resT > 0.8) {
+    // everyone takes a turn on the same bull before the next one is loaded
+    if (G.cur < G.players - 1) { G.cur++; startChute(); }
+    else {
+      G.cur = 0; G.round++;
+      if (G.round >= TOUR_LEN) finishTour(); else startChute();
+    }
+  }
+  else if (G.mode === 'final' && G.resT > 0.8) { G.mode = 'menu'; R = newRide(); G.round = 0; G.opening = false; G.gate = 1; }
+}
+function startChute() { R = newRide(); G.mode = 'chute'; G.gate = 1; G.opening = false; }
+function finishTour() {
+  G.mode = 'final'; G.resT = 0;
+  G.totals = G.all.map(totalOf);
+  const total = Math.max(...G.totals);
+  G.newBest = total > best;
+  if (G.newBest) { best = total; try { localStorage.setItem('cow_8sec_best', String(best)); } catch (e) {} }
+}
+
+function msg(text, color, x, y, size) { msgs.push({ text, color, x, y, life: 1.3, size: size || 26 }); }
+function dust(x, y, n, power = 1) {
+  for (let i = 0; i < n; i++) parts.push({ x: x + rand(-40, 40), y: y - rand(0, 6), z: rand(-0.7, 0.7), vz: rand(-0.6, 0.6),
+    vx: rand(-90, 90) * power, vy: rand(-110, -20) * power, life: rand(0.5, 1.1), max: 1.1, r: rand(6, 16) });
+  if (parts.length > 260) parts.splice(0, parts.length - 260);
+}
+
+// ---------- bull animation ----------
+function animBull(dt, b, k) {
+  R.ph += dt * (3.6 + b.diff * 0.5) * (0.35 + 0.65 * k);
+  const amp = (0.16 + b.diff * 0.03) * k;
+  const target = Math.sin(R.ph) * amp + R.kick;
+  R.kick *= Math.pow(0.02, dt);
+  R.pitchV += ((target - R.pitch) * 110 - R.pitchV * 11) * dt;
+  R.pitch += R.pitchV * dt;
+  const h = Math.max(0, Math.sin(R.ph + 0.9)) * (16 + b.diff * 4) * k;
+  if (R.hop > 3 && h <= 0.01 && k > 0.5 && R.bx > -100 && R.bx < W + 100) { dust(R.bx, GY, 6); sfx.hoof(); }
+  R.hop = h;
+  R.lurchV += (-R.lurch * 70 - R.lurchV * 9) * dt; R.lurch += R.lurchV * dt;
+  if (R.spin) R.spinPhase += R.spin.dir * 8.5 * dt;
+  else { const tg = Math.round(R.spinPhase / Math.PI) * Math.PI; R.spinPhase += (tg - R.spinPhase) * Math.min(1, dt * 7); }
+}
+
+// ---------- the ride ----------
+function doMove(m, b, gm, d) {
+  if (m.type === 'buck') {
+    R.vel += m.dir * (0.75 + d * 0.2) * gm; R.kick = 0.4; R.pitchV += 4; R.bucks++;
+    R.lurchV -= m.dir * 400;
+    dust(R.bx, GY, 10, 1.3); G.excite += 0.15;
+  } else if (m.type === 'drop') {
+    R.kick = -0.35; R.pitchV -= 5; R.drops++; R.lurchV -= m.dir * 200;
+    dust(R.bx, GY, 16, 1.6); sfx.thud();
+    if (m.sat) { R.vel += m.dir * 0.2; R.deep++; msg('SAT DEEP!', '#7CFF8A', bullScreen.x, bullScreen.y); sfx.good(); }
+    else { R.vel += m.dir * (1.15 + d * 0.2) * gm; msg('CAUGHT OFF GUARD', '#ffb347', bullScreen.x, bullScreen.y, 22); }
+    G.excite += 0.2;
+  } else {
+    // whip: a sharp sideways yank; they come in chains, left-right-left
+    R.vel += m.dir * (0.8 + d * 0.19) * gm; R.lurchV -= m.dir * 540; R.kick = 0.2; R.pitchV += 2;
+    dust(R.bx, GY, 8, 1.2); sfx.hoof(); G.excite += 0.15;
+  }
+}
+function updateRide(dt) {
+  const b = bull(), ot = Math.max(0, R.t - 8), d = Math.min(b.diff + ot * 0.35, b.diff + 5);
+  R.wt += dt;
+  if (R.state === 'on') {
+    R.t += dt;
+    const L = held('left'), Rt = held('right'), deep = held('deep');
+    const gripping = held('grip') && R.grip > 0;
+    if (gripping) R.grip = Math.max(0, R.grip - 0.38 * dt); else R.grip = Math.min(1, R.grip + 0.16 * dt);
+    const gm = gripping ? 0.55 : (R.grip <= 0.02 ? 1.25 : 1);
+
+    // bull picks its next trick, telegraphs it, then throws it
+    R.next -= dt;
+    if (!R.tel && R.next <= 0) {
+      const r = Math.random();
+      const st = STYLES[b.style || 'mixed'];
+      const type = r < st.buck ? 'buck' : r < st.buck + st.drop ? 'drop' : 'whip';
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      if (type === 'whip') { R.whipLeft = 2 + (d > 3 ? 1 : 0); R.spins++; msg('WHIPLASH!', '#ff9f43', bullScreen.x, bullScreen.y, 24); G.excite += 0.2; }
+      const time = Math.max(0.3, 0.62 - d * 0.06);
+      R.tel = { type, dir, time, max: time, sat: false };
+      sfx.cue();
+    }
+    if (R.tel) {
+      R.tel.time -= dt;
+      if (deep) R.tel.sat = true;
+      if (R.tel.time <= 0) {
+        const done = R.tel; doMove(done, b, gm, d); R.tel = null;
+        if (done.type === 'whip' && R.whipLeft > 0) {
+          // next yank comes right away, the other direction
+          R.whipLeft--; const t2 = Math.max(0.26, 0.45 - d * 0.03);
+          R.tel = { type: 'whip', dir: -done.dir, time: t2, max: t2, sat: false }; sfx.cue();
+        } else R.next = Math.max(0.35, rand(1.15 - d * 0.12, 1.75 - d * 0.16));
+      }
+    }
+    if (R.spin) {
+      R.vel += R.spin.dir * (1.3 + d * 0.35) * gm * dt;
+      R.spin.time -= dt;
+      if (R.spin.time <= 0) R.spin = null;
+    }
+
+    // rider balance: an inverted pendulum you fight with your weight
+    const inp = ((Rt ? 1 : 0) - (L ? 1 : 0)) * (deep ? 0.45 : 1);
+    R.vel += (R.bal * (1.6 + d * 0.15) + inp * 4.4) * dt;
+    R.vel += Math.sin(R.t * (5 + d)) * 0.22 * d * dt;
+    R.vel += (Math.random() - 0.5) * d * 2 * dt;
+    R.vel *= Math.pow(0.22, dt);
+    R.bal += R.vel * dt;
+    if (!R.qualified) R.devSum += Math.abs(R.bal) * dt;
+    if (R.qualified) R.bonus = overtimeBonus(R.t - 8);
+
+    if (Math.abs(R.bal) >= 1) buckOff();
+    else if (R.t >= 8 && !R.qualified) qualified();
+  } else {
+    R.endT += dt;
+    updateRag(dt);
+    if (R.endT > 3.2) finishRide();
+  }
+
+  // bull wanders the arena, then heads for the out gate once the ride's over
+  const tx = R.state === 'on' ? W / 2 + Math.sin(R.wt * 0.55) * 150 : (R.endT > 1.2 ? W + 260 : R.bx);
+  R.bx += (tx - R.bx) * Math.min(1, dt * (R.state === 'on' ? 1.4 : 1.1));
+  animBull(dt, b, R.state === 'on' ? 1 : 0.7);
+}
+function buckOff() {
+  R.state = 'off'; R.finalT = R.t; R.tel = null;
+  const s = Math.sign(R.bal), p = seat();
+  R.rag = { x: p.x, y: p.y, vx: s * rand(220, 320), vy: rand(-420, -320), rot: R.bal, vr: s * rand(6, 10), pose: 'ride', landed: false, stand: false };
+  if (R.qualified) msg('BUCKED OFF — BONUS KEPT!', '#ffd84d', W / 2, 200, 34);
+  else msg('BUCKED OFF!', '#ff5a4a', W / 2, 200, 44);
+  sfx.groan(); musicStinger('lose'); G.excite += 0.4;
+}
+// the whistle: score is locked in, but you can keep riding for overtime points
+function qualified() {
+  const b = bull();
+  R.qualified = true;
+  const rider = q4(clamp(50 - (R.devSum / 8) * 40 + Math.min(3, R.deep * 0.75), 32, 50));
+  const bs = q4(clamp(33 + b.diff * 2.6 + R.spins * 1.2 + R.bucks * 0.25 + rand(0, 2), 33, 50));
+  R.base = { rider, bull: bs };
+  msg('8 SECONDS!', '#7CFF8A', W / 2, 200, 48);
+  msg(isTouch ? 'Keep riding for bonus — or JUMP OFF' : 'Keep riding for bonus — ENTER to jump off', '#ffd84d', W / 2, 240, 20);
+  sfx.buzzer(); musicStinger('win'); setTimeout(() => sfx.cheer(3, 0.3), 250); G.excite = 1.6;
+}
+function jumpOff() {
+  R.state = 'done'; R.finalT = R.t; R.tel = null; R.spin = null;
+  const p = seat();
+  R.rag = { x: p.x, y: p.y, vx: R.bal > 0 ? -160 : 160, vy: -360, rot: R.bal, vr: 0, pose: 'ride', landed: false, stand: true };
+  if (R.bonus > 0) msg('+' + R.bonus.toFixed(2) + ' OVERTIME', '#7CFF8A', W / 2, 200, 36);
+  sfx.good(); sfx.cheer(2.5, 0.3); G.excite = 1.8;
+}
+function updateRag(dt) {
+  const r = R.rag; if (!r) return;
+  if (!r.landed) {
+    r.vy += 1200 * dt; r.x += r.vx * dt; r.y += r.vy * dt; r.rot += r.vr * dt;
+    const floor = r.stand ? GY - 38 : GY - 12;
+    if (r.y >= floor) {
+      r.y = floor; r.landed = true; dust(r.x, GY, 14, 1.2);
+      if (r.stand) { r.pose = 'stand'; r.rot = 0; } else sfx.thud();
+    }
+  } else {
+    r.x += r.vx * dt; r.vx *= Math.pow(0.02, dt);
+    if (!r.stand) { const tg = Math.sign(r.vx || 1) * 1.45; r.rot += (tg - r.rot) * Math.min(1, dt * 8); }
+  }
+  r.x = clamp(r.x, 40, W - 40);
+}
+function finishRide() {
+  const b = bull();
+  if (R.qualified) {
+    const bonus = R.bonus;
+    R.score = { rider: R.base.rider, bull: R.base.bull, bonus, total: R.base.rider + R.base.bull + bonus };
+    G.results.push({ bull: b.name, score: R.score.total, time: R.finalT });
+  } else {
+    G.results.push({ bull: b.name, score: null, time: R.finalT });
+  }
+  G.mode = 'result'; G.resT = 0;
+}
+
+// ---------- update ----------
+function update(dt) {
+  T += dt;
+  G.excite = clamp(G.excite * Math.pow(0.6, dt), 0.15, 2);
+  if (G.mode === 'menu' || G.mode === 'chute') {
+    animBull(dt, bull(), 0.12);
+    R.bx = 140;
+    if (G.opening) {
+      G.gate -= dt * 3.5;
+      if (G.gate <= 0) { G.gate = 0; G.opening = false; G.mode = 'ride'; R.state = 'on'; sfx.cheer(1.6, 0.2); G.excite = 0.8; }
+    }
+  } else if (G.mode === 'ride') updateRide(dt);
+  else { G.resT += dt; if (R.rag) updateRag(dt); }
+  // the bull snorts steam when he's winding up (and now and then in the chute)
+  const angry = G.mode === 'ride' && R.state === 'on' && R.tel;
+  if (R.nose && G.mode !== 'result' && G.mode !== 'final' && (angry ? Math.random() < 0.6 : Math.random() < dt * 0.6)) {
+    const fx = Math.cos(R.spinPhase), fz = -Math.sin(R.spinPhase);
+    for (let k = 0; k < (angry ? 1 : 6); k++) { const sp = rand(40, 110);
+      parts.push({ x: R.nose.x, y: R.nose.y, z: R.nose.z, vx: fx * sp, vz: fz * sp / S, vy: rand(-30, 10),
+        life: rand(0.3, 0.6), max: 0.6, r: rand(2, 5), steam: true }); }
+    if (parts.length > 260) parts.splice(0, parts.length - 260);
+  }
+  if (G.mode !== 'chute' && G.mode !== 'menu' && G.gate < 1 && G.mode !== 'ride') G.gate = Math.min(1, G.gate + dt);
+
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.z += (p.vz || 0) * dt; p.vy += (p.steam ? -30 : 60) * dt; p.vx *= 0.97; p.r += 14 * dt; p.life -= dt;
+    if (p.life <= 0) parts.splice(i, 1);
+  }
+  for (let i = msgs.length - 1; i >= 0; i--) { const m = msgs[i]; m.life -= dt; m.y -= 30 * dt; if (m.life <= 0) msgs.splice(i, 1); }
+}
+
+// ---------- drawing ----------
+function rr(x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+function text(s, x, y, size, color, align = 'center', weight = 'bold') {
+  ctx.font = `${weight} ${size}px ${FONT}`; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  ctx.fillStyle = color; ctx.fillText(s, x, y);
+}
+function shadowText(s, x, y, size, color, align) {
+  text(s, x + 3, y + 3, size, 'rgba(0,0,0,.6)', align); text(s, x, y, size, color, align);
+}
+
+// ===================== 3D WORLD =====================
+// Game logic still runs in the old 960x540 "logical pixel" space; this maps it into 3D.
+const S = 60;                                     // logical pixels per world unit
+const toWX = lx => (lx - W / 2) / S, toWY = ly => (GY - ly) / S;
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpQ2 = new THREE.Quaternion();
+const AY = V3(0, 1, 0), AZ = V3(0, 0, 1);
+const bullScreen = { x: W / 2, y: 250 };
+const C = c => new THREE.Color(c).convertSRGBToLinear();   // author colors in sRGB, light in linear
+
+renderer = new THREE.WebGLRenderer({ canvas: gl, antialias: true, powerPreference: 'high-performance' });
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputEncoding = THREE.sRGBEncoding;
+const scene = new THREE.Scene();
+scene.background = C('#0a0812');
+scene.fog = new THREE.Fog(C('#140e1c'), 16, 46);
+const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 120);
+
+// bloom makes the lights, glowing eyes and camera flashes pop
+let composer = null;
+if (THREE.EffectComposer && THREE.UnrealBloomPass && THREE.GammaCorrectionShader) {
+  composer = new THREE.EffectComposer(renderer);
+  composer.addPass(new THREE.RenderPass(scene, camera));
+  composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.45, 0.5, 0.96));
+  composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));
+}
+resize();
+
+// ---------- lights: a hot key spot on the dirt, colored side spots, soft fill ----------
+scene.add(new THREE.HemisphereLight(C('#6a70b0'), C('#3a2414'), 0.45));
+const key = new THREE.SpotLight(C('#ffe2b8'), 2.0, 45, 0.6, 0.65, 1);
+key.position.set(2, 16, 7); key.target.position.set(0, 0, 0);
+key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004;
+key.shadow.camera.near = 5; key.shadow.camera.far = 40;
+scene.add(key, key.target);
+for (const [x, col, tx, inten] of [[-11, '#ffb070', -3, 1.4], [11, '#b8c8ff', 3, 1.2]]) {
+  const sp = new THREE.SpotLight(C(col), inten, 40, 0.55, 0.8, 1);
+  sp.position.set(x, 13, 3); sp.target.position.set(tx, 0, 0); scene.add(sp, sp.target);
+}
+const standLight = new THREE.DirectionalLight(C('#ffd9b0'), 0.45); standLight.position.set(0, 7, 12); scene.add(standLight);
+
+function canvasTex(w, h, paint, srgb = true) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  paint(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 8;
+  if (srgb) t.encoding = THREE.sRGBEncoding;
+  return t;
+}
+const mat = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color: C(color), roughness: 0.8 }, o || {}));
+const SPH = new THREE.SphereGeometry(1, 40, 28);
+const LONG = SPH.clone(); LONG.rotateZ(Math.PI / 2);   // sphere whose UV runs nose-to-tail
+const BOX = new THREE.BoxGeometry(1, 1, 1);
+function mesh(geo, m, parent, x = 0, y = 0, z = 0, sx = 1, sy = 1, sz = 1) {
+  const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz);
+  o.castShadow = true; o.receiveShadow = true; parent.add(o); return o;
+}
+// a cylinder running from point a to point b, radius ra at a and rb at b
+function cyl(a, b, ra, rb, m, parent, seg = 14) {
+  const d = new THREE.Vector3().subVectors(b, a), len = d.length();
+  const o = new THREE.Mesh(new THREE.CylinderGeometry(rb, ra, len, seg), m);
+  o.position.copy(a).addScaledVector(d, 0.5);
+  o.quaternion.setFromUnitVectors(AY, d.normalize());
+  o.castShadow = true; o.receiveShadow = true; parent.add(o); return o;
+}
+function seeded(str) {
+  let s = 7; for (const ch of str) s = (s * 31 + ch.charCodeAt(0)) % 2147483647;
+  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+}
+// fine streaky noise, used as a bump map so hides read as short hair
+const furBump = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#808080'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 9000; i++) {
+    const v = 90 + Math.random() * 90 | 0; g.strokeStyle = `rgb(${v},${v},${v})`; g.lineWidth = 1;
+    const x = Math.random() * w, y = Math.random() * h; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.random() * 2 - 1, y + 3 + Math.random() * 4); g.stroke();
+  }
+}, false);
+furBump.wrapS = furBump.wrapT = THREE.RepeatWrapping; furBump.repeat.set(4, 2);
+const woodTex = canvasTex(256, 64, (g, w, h) => {
+  g.fillStyle = '#6e4a2a'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 60; i++) {
+    g.strokeStyle = `rgba(${Math.random() < 0.5 ? '40,24,10' : '150,110,70'},${0.15 + Math.random() * 0.25})`; g.lineWidth = 1 + Math.random() * 2;
+    const y = Math.random() * h; g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(w * 0.3, y + rand(-4, 4), w * 0.6, y + rand(-4, 4), w, y + rand(-3, 3)); g.stroke();
+  }
+});
+woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping;
+
+// ---------- arena floor: raked dirt with hoof prints ----------
+const dirtPaint = (g, w, h, bump) => {
+  g.fillStyle = bump ? '#808080' : '#94704a'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 14000; i++) {
+    const r = Math.random() * 3 + 0.6, dark = Math.random() < 0.5;
+    g.fillStyle = bump ? (dark ? 'rgba(0,0,0,.25)' : 'rgba(255,255,255,.25)') : (dark ? 'rgba(55,32,14,.28)' : 'rgba(235,198,150,.2)');
+    g.fillRect(Math.random() * w, Math.random() * h, r, r);
+  }
+  g.strokeStyle = bump ? 'rgba(0,0,0,.22)' : 'rgba(70,42,20,.16)'; g.lineWidth = 3;
+  for (let y = 0; y < h; y += 14) { g.beginPath(); g.moveTo(0, y); for (let x = 0; x <= w; x += 40) g.lineTo(x, y + Math.sin(x * 0.02 + y) * 3); g.stroke(); }
+  for (let i = 0; i < 40; i++) {   // hoof prints
+    const x = Math.random() * w, y = Math.random() * h;
+    g.fillStyle = bump ? 'rgba(0,0,0,.5)' : 'rgba(60,36,16,.35)';
+    g.beginPath(); g.ellipse(x - 4, y, 4, 7, 0.2, 0, 7); g.ellipse(x + 4, y, 4, 7, -0.2, 0, 7); g.fill();
+  }
+};
+const dirtTex = canvasTex(1024, 1024, (g, w, h) => dirtPaint(g, w, h, false));
+const dirtBump = canvasTex(1024, 1024, (g, w, h) => dirtPaint(g, w, h, true), false);
+for (const t of [dirtTex, dirtBump]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 4); }
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(70, 44), new THREE.MeshStandardMaterial({
+  map: dirtTex, bumpMap: dirtBump, bumpScale: 0.06, roughness: 1 }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+// soft dark blob under the bull so it sits in the dirt
+const blobTex = canvasTex(128, 128, g => {
+  const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, 'rgba(0,0,0,.55)'); r.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128);
+});
+const contact = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false }));
+contact.rotation.x = -Math.PI / 2; contact.position.y = 0.01; scene.add(contact);
+
+// ---------- fence + sponsor boards ----------
+const woodM = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.9 });
+const postM = new THREE.MeshStandardMaterial({ map: woodTex, color: C('#9a8070'), roughness: 0.9 });
+for (let x = -19.2; x <= 19.2; x += 2.4) {
+  cyl(V3(x, 0, -5.5), V3(x, 2.0, -5.5), 0.11, 0.1, postM, scene, 10);
+  mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 10), postM, scene, x, 2.02, -5.5);
+}
+for (const y of [1.4, 1.8]) mesh(BOX, woodM, scene, 0, y, -5.44, 40, 0.14, 0.1);
+mesh(BOX, woodM, scene, 0, 0.12, -5.44, 40, 0.24, 0.1);
+const ADS = ['MOO COLA', 'GRANNY GRITS', 'YEEHAW INS.', 'DUSTBOWL', 'SADDLE SODA', 'HAY HAY TV'];
+const adMats = ADS.map((t, i) => new THREE.MeshStandardMaterial({ roughness: 0.6, map: canvasTex(512, 128, (g, w, h) => {
+  const gr = g.createLinearGradient(0, 0, 0, h);
+  gr.addColorStop(0, i % 2 ? '#f2e8cf' : '#2c4a6c'); gr.addColorStop(1, i % 2 ? '#d8c9a6' : '#1c3250');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.strokeStyle = i % 2 ? '#8a3a20' : '#d4a845'; g.lineWidth = 6; g.strokeRect(8, 8, w - 16, h - 16);
+  g.font = `bold 58px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = i % 2 ? '#5a1d12' : '#f3d58a'; g.fillText(t, w / 2, h / 2 + 4);
+}) }));
+for (let i = 0, x = -18; x < 18; x += 2.4, i++) {
+  const ad = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.62), adMats[i % ADS.length]);
+  ad.position.set(x + 1.2, 0.78, -5.38); ad.receiveShadow = true; scene.add(ad);
+}
+
+// ---------- stands + crowd ----------
+mesh(BOX, mat('#1a1016'), scene, 0, 1.2, -6.4, 46, 2.4, 0.4);
+const ROWS = 9, PER_ROW = 46;
+for (let i = 0; i < ROWS; i++) {
+  mesh(BOX, mat(i % 2 ? '#2a1c24' : '#33232c'), scene, 0, 2.1 + i * 0.62, -7.2 - i * 0.95, 48, 0.62, 0.95);
+  mesh(BOX, mat('#6a1c18'), scene, 0, 2.58 + i * 0.62, -7.55 - i * 0.95, 48, 0.36, 0.08);   // seat backs
+}
+const SHIRTS = ['#c0392b', '#2e86de', '#f5f6fa', '#f1c40f', '#8e44ad', '#16a085', '#e67e22', '#34495e', '#d35400', '#7f8c8d'];
+const SKINS = ['#f1c8a5', '#e0ac85', '#c68863', '#8d5a3c', '#5c3a26'];
+const crowdN = ROWS * PER_ROW, crowdData = [];
+const crowdBody = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.21, 0.52, 10), mat('#ffffff'), crowdN);
+// a tiny face painted on the side of the head sphere that looks at the camera (+z)
+const crowdFace = canvasTex(128, 64, (g, w, h) => {
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#2a1a12'; for (const dx of [-6, 6]) { g.beginPath(); g.arc(32 + dx, 28, 2.6, 0, 7); g.fill(); }
+  g.strokeStyle = '#5a2418'; g.lineWidth = 2; g.beginPath(); g.arc(32, 33, 6, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+});
+const crowdHead = new THREE.InstancedMesh(new THREE.SphereGeometry(0.14, 16, 12), new THREE.MeshStandardMaterial({ map: crowdFace, roughness: 0.8 }), crowdN);
+const crowdHat = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.25, 0.04, 14), mat('#b8955a'), crowdN);
+const crowdCrown = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.11, 0.13, 0.13, 10), mat('#b8955a'), crowdN);
+const crowdArm = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.045, 0.05, 0.42, 6), mat('#ffffff'), crowdN * 2);
+const dummy = new THREE.Object3D();
+for (let i = 0; i < ROWS; i++) for (let j = 0; j < PER_ROW; j++) {
+  const k = i * PER_ROW + j, rnd = Math.random;
+  crowdData.push({ x: -22.5 + j + rnd() * 0.4, y: 2.41 + i * 0.62 + 0.28, z: -7.2 - i * 0.95, p: rnd() * 6, hat: rnd() < 0.45,
+    s: 0.88 + rnd() * 0.25, fan: rnd() });
+  const shirt = C(SHIRTS[(k * 7 + i) % SHIRTS.length]).multiplyScalar(0.75 + rnd() * 0.35);
+  crowdBody.setColorAt(k, shirt); crowdArm.setColorAt(k * 2, shirt); crowdArm.setColorAt(k * 2 + 1, shirt);
+  crowdHead.setColorAt(k, C(SKINS[(rnd() * SKINS.length) | 0]));
+}
+scene.add(crowdBody, crowdHead, crowdHat, crowdCrown, crowdArm);
+for (const m of [crowdBody, crowdHead, crowdArm]) m.receiveShadow = true;
+// camera flashes popping in the stands
+const flashes = [];
+function updateCrowd() {
+  const ex = G.excite;
+  for (let k = 0; k < crowdN; k++) {
+    const c = crowdData[k], wave = Math.sin(T * (5 + c.p) + c.p * 3);
+    const bob = Math.max(0, wave) * 0.1 * ex, sc = c.s;
+    dummy.rotation.set(0, 0, 0); dummy.scale.setScalar(sc);
+    dummy.position.set(c.x, c.y + bob, c.z); dummy.updateMatrix(); crowdBody.setMatrixAt(k, dummy.matrix);
+    dummy.position.y = c.y + bob + 0.4 * sc; dummy.updateMatrix(); crowdHead.setMatrixAt(k, dummy.matrix);
+    dummy.scale.setScalar(c.hat ? sc : 0);
+    dummy.position.y = c.y + bob + 0.5 * sc; dummy.updateMatrix(); crowdHat.setMatrixAt(k, dummy.matrix);
+    dummy.position.y = c.y + bob + 0.57 * sc; dummy.updateMatrix(); crowdCrown.setMatrixAt(k, dummy.matrix);
+    // the excited ones throw their arms up
+    const up = clamp((ex - c.fan * 1.2) * 2, 0, 1);
+    for (const s of [1, -1]) {
+      const ang = s * (0.25 + up * (2.4 + wave * 0.25));
+      dummy.scale.setScalar(sc); dummy.rotation.set(0, 0, ang);
+      dummy.position.set(c.x + s * 0.21 * sc - Math.sin(ang) * 0.2 * sc, c.y + bob + 0.12 * sc + Math.cos(ang) * -0.2 * sc + up * 0.05, c.z);
+      dummy.updateMatrix(); crowdArm.setMatrixAt(k * 2 + (s > 0 ? 0 : 1), dummy.matrix);
+    }
+  }
+  for (const m of [crowdBody, crowdHead, crowdHat, crowdCrown, crowdArm]) m.instanceMatrix.needsUpdate = true;
+  if (Math.random() < 0.12 * ex) {
+    const f = flashes.find(f => f.life <= 0);
+    if (f) { const c = crowdData[(Math.random() * crowdN) | 0]; f.life = 0.12; f.sp.position.set(c.x, c.y + 0.4, c.z + 0.3); }
+  }
+  for (const f of flashes) { f.life -= 1 / 60; f.sp.visible = f.life > 0; }
+}
+
+// ---------- banner, light rigs, light beams ----------
+const banner = new THREE.Mesh(new THREE.PlaneGeometry(34, 1.2), new THREE.MeshBasicMaterial({ map: canvasTex(2048, 72, (g, w, h) => {
+  g.fillStyle = '#5a1d12'; g.fillRect(0, 0, w, h); g.fillStyle = '#d4a845'; g.fillRect(0, 0, w, 5); g.fillRect(0, h - 5, w, 5);
+  g.font = `bold 40px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#f3d58a';
+  g.fillText('★  DUSTBOWL STAMPEDE  ★  THUNDERHOOF SHOWDOWN  ★  HOLD ON TIGHT, COWPOKE  ★', w / 2, h / 2 + 2);
+}) }));
+banner.position.set(0, 8.4, -15.2); scene.add(banner);
+const glowTex = canvasTex(64, 64, g => {
+  const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,245,215,1)'); r.addColorStop(0.3, 'rgba(255,235,190,.5)'); r.addColorStop(1, 'rgba(255,235,190,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+});
+for (let i = 0; i < 10; i++) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: C('#ffffff'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  sp.scale.set(1.1, 1.1, 1); sp.visible = false; scene.add(sp); flashes.push({ sp, life: 0 });
+}
+const beamGeo = new THREE.ConeGeometry(2.4, 1, 32, 1, true); beamGeo.translate(0, -0.5, 0);   // apex at the origin
+const beamMat = new THREE.MeshBasicMaterial({ color: C('#ffe6b8'), transparent: true, opacity: 0.022,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+for (const lx of [-13, -4.5, 4.5, 13]) {
+  mesh(BOX, mat('#1a1a1a'), scene, lx, 11, -11, 2.4, 0.9, 0.3);
+  for (let j = -2; j <= 2; j++) {
+    const bulb = mesh(new THREE.SphereGeometry(0.16, 12, 10), new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.8, 2.4) }), scene, lx + j * 0.42, 11, -10.8);
+    bulb.castShadow = false;
+  }
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  glow.position.set(lx, 11, -10.6); glow.scale.set(7, 7, 1); scene.add(glow);
+  // a faint cone of light falling onto the dirt
+  const from = V3(lx, 11, -10.6), to = V3(lx * 0.35, 0, 0.5), dir = new THREE.Vector3().subVectors(from, to);
+  const beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.copy(from); beam.scale.set(1, dir.length(), 1);
+  beam.quaternion.setFromUnitVectors(AY, dir.normalize()); scene.add(beam);
+}
+
+// ---------- chute + swinging out-gate ----------
+const CX = toWX(140);
+const pipeM = mat('#9aa3ad', { metalness: 0.35, roughness: 0.35 });
+const chute = new THREE.Group(); scene.add(chute);
+for (const z of [-1.15, 1.15]) {
+  for (const x of [CX - 1.95, CX, CX + 1.9]) cyl(V3(x, 0, z), V3(x, 2.2, z), 0.07, 0.07, pipeM, chute);
+  for (const y of z < 0 ? [0.5, 0.95, 1.4, 1.85] : [1.45, 1.95]) cyl(V3(CX - 1.95, y, z), V3(CX + 1.9, y, z), 0.045, 0.045, pipeM, chute);
+}
+mesh(BOX, woodM, chute, CX, 0.6, -1.25, 3.9, 1.2, 0.06);
+const chuteSign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshBasicMaterial({ map: canvasTex(256, 64, (g, w, h) => {
+  g.fillStyle = '#2d3136'; g.fillRect(0, 0, w, h); g.font = `bold 34px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#f3d58a'; g.fillText('CHUTE 3', w / 2, h / 2 + 2);
+}) }));
+chuteSign.position.set(CX, 2.55, 1.16); chute.add(chuteSign);
+const gate = new THREE.Group(); gate.position.set(CX + 1.95, 0, 1.15); scene.add(gate);
+for (const y of [0.4, 0.8, 1.2, 1.6, 2.0]) cyl(V3(0, y, 0), V3(0, y, -2.3), 0.045, 0.045, y === 2.0 ? mat('#c0392b') : pipeM, gate);
+cyl(V3(0, 0, -2.3), V3(0, 2.1, -2.3), 0.06, 0.06, pipeM, gate);
+cyl(V3(0, 0, 0), V3(0, 2.1, 0), 0.07, 0.07, pipeM, gate);
+
+// ---------- bulls ----------
+function paintCoat(b) {
+  // canvas x wraps around the body (belly at the edges, spine in the middle); canvas y runs tail (top) to nose (bottom)
+  const rnd = seeded(b.name);
+  return canvasTex(1024, 512, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, w, 0);
+    gr.addColorStop(0, b.dark); gr.addColorStop(0.3, b.body); gr.addColorStop(0.5, b.body); gr.addColorStop(0.7, b.body); gr.addColorStop(1, b.dark);
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    // subtle hair variation so flat colors don't look like plastic
+    for (let i = 0; i < 6000; i++) { g.fillStyle = `rgba(${rnd() < 0.5 ? '0,0,0' : '255,255,255'},0.035)`; g.fillRect(rnd() * w, rnd() * h, 2, 5); }
+    g.fillStyle = b.patch; g.strokeStyle = b.patch;
+    const blob = (rx, ry) => {
+      const x = rnd() * w, y = rnd() * h, a = rnd() * 3;
+      g.beginPath(); for (let t = 0; t <= 24; t++) { const ang = t / 24 * Math.PI * 2, wob = 1 + Math.sin(ang * 3 + a) * 0.15 + Math.sin(ang * 5 + a * 2) * 0.08;
+        g.lineTo(x + Math.cos(ang) * rx * wob, y + Math.sin(ang) * ry * wob); } g.fill();
+    };
+    switch (b.pattern) {
+      case 'spots': for (let i = 0; i < 14; i++) blob(36 + rnd() * 50, 24 + rnd() * 32); break;
+      case 'paint': for (let i = 0; i < 7; i++) blob(90 + rnd() * 90, 70 + rnd() * 70); break;
+      case 'belly': g.fillRect(0, 0, 160, h); g.fillRect(w - 160, 0, 160, h); break;
+      case 'brindle':
+        g.globalAlpha = 0.4; g.lineWidth = 7;
+        for (let y = 0; y < h; y += 16) { g.beginPath(); g.moveTo(0, y); for (let x = 0; x <= w; x += 40) g.lineTo(x, y + Math.sin(x * 0.03 + y) * 7); g.stroke(); }
+        g.globalAlpha = 1; break;
+      case 'saddle': g.beginPath(); g.ellipse(w / 2, h * 0.42, 280, 120, 0, 0, 7); g.fill(); break;
+      case 'roan': g.globalAlpha = 0.6; for (let i = 0; i < 3500; i++) { g.beginPath(); g.arc(rnd() * w, rnd() * h, 1.5 + rnd() * 3, 0, 7); g.fill(); } g.globalAlpha = 1; break;
+      case 'freckles': for (let i = 0; i < 300; i++) { g.beginPath(); g.arc(rnd() * w, rnd() * h, 5 + rnd() * 7, 0, 7); g.fill(); } break;
+      case 'dapple': g.globalAlpha = 0.5; for (let i = 0; i < 90; i++) { const r = 14 + rnd() * 18; g.lineWidth = r * 0.45; g.beginPath(); g.arc(rnd() * w, rnd() * h, r, 0, 7); g.stroke(); } g.globalAlpha = 1; break;
+      case 'stripe': g.fillRect(w / 2 - 40, 0, 80, h); break;
+      case 'belt': g.fillRect(0, h * 0.4, w, h * 0.2); break;
+      case 'half': g.fillRect(0, h / 2, w, h / 2); break;
+      case 'polka':
+        for (let y = 32, row = 0; y < h; y += 64, row++)
+          for (let x = (row % 2) * 48; x < w + 48; x += 96) { g.beginPath(); g.arc(x, y, 20, 0, 7); g.fill(); }
+        break;
+      case 'galaxy': {
+        // swirls of nebula with stars sprinkled over the top
+        for (let i = 0; i < 9; i++) {
+          const x = rnd() * w, y = rnd() * h, r = 60 + rnd() * 90, hue = rnd() < 0.5 ? '150,80,255' : '60,160,255';
+          const ng = g.createRadialGradient(x, y, 0, x, y, r); ng.addColorStop(0, `rgba(${hue},.6)`); ng.addColorStop(1, `rgba(${hue},0)`);
+          g.fillStyle = ng; g.fillRect(x - r, y - r, r * 2, r * 2);
+        }
+        g.fillStyle = b.patch;
+        for (let i = 0; i < 900; i++) { g.globalAlpha = 0.6 + rnd() * 0.4; g.beginPath(); g.arc(rnd() * w, rnd() * h, 1.8 + rnd() * 3.2, 0, 7); g.fill(); }
+        g.globalAlpha = 1; break;
+      }
+      case 'zebra':
+        g.lineWidth = 34; g.lineCap = 'round';
+        for (let y = 20; y < h; y += 78) { g.beginPath(); g.moveTo(-20, y); for (let x = 0; x <= w + 40; x += 40) g.lineTo(x, y + Math.sin(x * 0.012 + y * 0.05) * 22); g.stroke(); }
+        break;
+      case 'rosettes':
+        for (let i = 0; i < 55; i++) {
+          const cx = rnd() * w, cy = rnd() * h, rr = 16 + rnd() * 8;
+          for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2 + rnd(); g.beginPath(); g.ellipse(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 7 + rnd() * 4, 5 + rnd() * 3, a, 0, 7); g.fill(); }
+        }
+        break;
+      case 'fade': {
+        // dark at the front end, melting into the base color toward the tail
+        const c = new THREE.Color(b.patch), rgb = `${c.r * 255 | 0},${c.g * 255 | 0},${c.b * 255 | 0}`;
+        const fg = g.createLinearGradient(0, h * 0.25, 0, h);
+        fg.addColorStop(0, `rgba(${rgb},0)`); fg.addColorStop(1, `rgba(${rgb},1)`);
+        g.fillStyle = fg; g.fillRect(0, 0, w, h); break;
+      }
+    }
+  });
+}
+const bullModels = {};
+let curBull = null;
+function buildBull(b) {
+  const root = new THREE.Group(), yaw = new THREE.Group(), pitch = new THREE.Group();
+  root.add(yaw); yaw.add(pitch); pitch.position.y = 1.25;
+  const hide = { roughness: 0.72, bumpMap: furBump, bumpScale: 0.015 };
+  if (b.metal) Object.assign(hide, { metalness: 0.75, roughness: 0.28, bumpScale: 0.004 });   // a solid-gold legend
+  const coat = new THREE.MeshStandardMaterial(Object.assign({ map: paintCoat(b) }, hide));
+  const bodyM = mat(b.body, hide), darkM = mat(b.dark, hide), patchM = mat(b.patch, hide);
+  const hoofM = mat('#1b1411', { roughness: 0.5 }), goldM = mat('#d4a845', { metalness: 0.7, roughness: 0.3 });
+  const half = b.pattern === 'half', belt = b.pattern === 'belt';
+  const humpM = half ? patchM : belt ? bodyM : coat, rumpM = half || belt ? bodyM : coat;
+
+  mesh(LONG, coat, pitch, 0.05, 0.2, 0, 1.6, 0.46, 0.34);           // barrel
+  mesh(LONG, humpM, pitch, 0.68, 0.5, 0, 0.55, 0.3, 0.26);           // hump
+  mesh(LONG, humpM, pitch, 1.35, 0.26, 0, 0.55, 0.34, 0.25);          // neck
+  mesh(LONG, rumpM, pitch, -1.15, 0.2, 0, 0.55, 0.42, 0.32);         // rump
+  for (const s of [1, -1]) {
+    mesh(LONG, humpM, pitch, 0.85, 0.0, s * 0.17, 0.3, 0.32, 0.12); // shoulders
+    mesh(LONG, rumpM, pitch, -1.05, 0.08, s * 0.17, 0.38, 0.4, 0.14); // haunches
+  }
+  mesh(SPH, half ? patchM : bodyM, pitch, 1.42, -0.18, 0, 0.2, 0.22, 0.1); // dewlap
+  // flank strap, bull rope and bell
+  const ring = new THREE.TorusGeometry(1, 0.055, 10, 48);
+  const strap = mesh(ring, mat('#e8d49a', { roughness: 0.9 }), pitch, -0.95, 0.2, 0, 0.35, 0.44, 1); strap.rotation.y = Math.PI / 2;
+  const rope = mesh(ring, mat('#c9a050', { roughness: 0.9 }), pitch, 0.15, 0.2, 0, 0.37, 0.5, 1); rope.rotation.y = Math.PI / 2;
+  mesh(new THREE.ConeGeometry(0.11, 0.2, 16), goldM, pitch, 0.15, -0.38, 0);
+
+  // legs: a hip joint and a knee joint each, so they can tuck and kick
+  const legs = [];
+  const mkLeg = (x, y, z, l1, l2, r1, r2) => {
+    const hip = new THREE.Group(); hip.position.set(x, y, z); pitch.add(hip);
+    mesh(SPH, bodyM, hip, 0, 0, 0, r1 * 1.15, r1 * 1.15, r1 * 1.15);
+    mesh(new THREE.CylinderGeometry(r2, r1, l1, 14), bodyM, hip, 0, -l1 / 2, 0);
+    const knee = new THREE.Group(); knee.position.y = -l1; hip.add(knee);
+    const lowM = b.pattern === 'socks' ? patchM : bodyM;
+    mesh(SPH, lowM, knee, 0, 0, 0, r2 * 1.1, r2 * 1.1, r2 * 1.1);
+    mesh(new THREE.CylinderGeometry(r2 * 0.8, r2, l2, 12), lowM, knee, 0, -l2 / 2, 0);
+    mesh(SPH, lowM, knee, 0.01, -l2 + 0.03, 0, r2 * 0.95, r2 * 0.8, r2 * 0.95);   // fetlock
+    mesh(new THREE.CylinderGeometry(0.075, 0.1, 0.13, 12), hoofM, knee, 0.02, -l2 - 0.05, 0);
+    legs.push({ hip, knee });
+  };
+  mkLeg(0.85, -0.3, 0.17, 0.5, 0.44, 0.11, 0.07); mkLeg(0.85, -0.3, -0.17, 0.5, 0.44, 0.11, 0.07);
+  mkLeg(-1.1, -0.1, 0.17, 0.58, 0.5, 0.14, 0.07); mkLeg(-1.1, -0.1, -0.17, 0.58, 0.5, 0.14, 0.07);
+
+  // tail: a chain of segments that swishes and whips
+  const tail = []; let par = new THREE.Group(); par.position.set(-1.72, 0.35, 0); pitch.add(par);
+  for (let i = 0; i < 7; i++) {
+    const g = new THREE.Group(); if (i) g.position.y = -0.15; par.add(g);
+    mesh(new THREE.CylinderGeometry(0.03, 0.04 - i * 0.002, 0.16, 8), darkM, g, 0, -0.075, 0);
+    tail.push(g); par = g;
+  }
+  mesh(SPH, darkM, par, 0, -0.26, 0, 0.09, 0.19, 0.09);
+
+  // head
+  const head = new THREE.Group(); head.position.set(1.8, 0.12, 0); pitch.add(head);
+  const faceM = ['baldy', 'mask', 'half'].includes(b.pattern) ? patchM : bodyM;
+  mesh(SPH, faceM, head, 0.15, 0, 0, 0.45, 0.3, 0.24);
+  mesh(SPH, faceM, head, 0.0, 0.18, 0, 0.3, 0.2, 0.3);                 // poll
+  mesh(SPH, mat(b.muzzle, { roughness: 0.3 }), head, 0.55, -0.12, 0, 0.27, 0.24, 0.26);   // wet nose
+  const nostrils = [1, -1].map(s => mesh(SPH, mat('#140c0a', { roughness: 0.3 }), head, 0.79, -0.05, s * 0.1, 0.05, 0.07, 0.05));
+  const tongue = mesh(SPH, mat('#d0606a', { roughness: 0.35 }), head, 0.62, -0.34, 0.07, 0.13, 0.035, 0.05); tongue.rotation.z = -0.5;
+  mesh(new THREE.TorusGeometry(0.09, 0.022, 10, 24), goldM, head, 0.8, -0.3, 0);
+  if (b.pattern === 'star') { const st = mesh(new THREE.OctahedronGeometry(1, 0), patchM, head, 0.33, 0.22, 0, 0.13, 0.13, 0.13); st.rotation.y = Math.PI / 4; }
+  else if (!['baldy', 'mask', 'half', 'saddle', 'stripe'].includes(b.pattern)) { const bl = mesh(SPH, patchM, head, 0.34, 0.2, 0, 0.28, 0.09, 0.13); bl.rotation.z = -0.5; }
+  const eyeCol = new THREE.Color(b.eye), glowing = eyeCol.r + eyeCol.g + eyeCol.b > 0.9;
+  const eyeM = mat(b.eye, glowing ? { emissive: C(b.eye), emissiveIntensity: 3 } : { roughness: 0.1 });
+  for (const s of [1, -1]) {
+    mesh(SPH, mat('#f2ead8', { roughness: 0.15 }), head, 0.22, 0.1, s * 0.27, 0.075, 0.065, 0.05);
+    mesh(SPH, eyeM, head, 0.255, 0.1, s * 0.305, 0.045, 0.045, 0.03);
+    const brow = mesh(SPH, faceM, head, 0.2, 0.17, s * 0.27, 0.14, 0.05, 0.08); brow.rotation.z = -0.35;
+    const lid = mesh(SPH, faceM, head, 0.225, 0.128, s * 0.279, 0.085, 0.045, 0.058); lid.rotation.z = -0.25;   // heavy, mean eyelids
+    cyl(V3(0.68, -0.27, s * 0.13), V3(0.4, -0.2, s * 0.19), 0.012, 0.01, mat('#1a0f0c'), head);              // mouth line
+    const ear = mesh(SPH, darkM, head, -0.15, 0.17, s * 0.38, 0.2, 0.07, 0.12); ear.rotation.x = s * 0.4;
+    // horns sweep out, up and forward; built from tapering segments
+    const hs = b.hornSize || 1, hornM = mat(b.horn, { roughness: 0.35 }), tipM = mat('#2a2018', { roughness: 0.3 });
+    const pts = [V3(0, 0.26, s * 0.2), V3(0, 0.33, s * 0.42), V3(0.04, 0.45, s * 0.6), V3(0.12, 0.62, s * 0.7), V3(0.3, 0.84, s * 0.69)]
+      .map(p => V3(p.x * hs, 0.26 + (p.y - 0.26) * hs, s * (0.2 + (Math.abs(p.z) - 0.2) * hs)));
+    const radii = [0.1, 0.085, 0.065, 0.045, 0.018];
+    for (let i = 0; i < 4; i++) {
+      cyl(pts[i], pts[i + 1], radii[i] * Math.sqrt(hs), radii[i + 1] * Math.sqrt(hs), i === 3 ? tipM : hornM, head);
+      if (i < 3) mesh(SPH, hornM, head, pts[i + 1].x, pts[i + 1].y, pts[i + 1].z, radii[i + 1] * Math.sqrt(hs), radii[i + 1] * Math.sqrt(hs), radii[i + 1] * Math.sqrt(hs));
+    }
+  }
+  const nose = new THREE.Object3D(); nose.position.set(0.84, -0.06, 0); head.add(nose);
+  const seatObj = new THREE.Object3D(); seatObj.position.set(0, 0.67, 0); pitch.add(seatObj);
+  return { root, yaw, pitch, head, legs, tail, nose, nostrils, tongue, seat: seatObj };
+}
+
+// ---------- rider ----------
+function buildRider() {
+  const root = new THREE.Group();
+  const jeans = mat('#2b4a7a', { roughness: 0.9 }), chaps = mat('#6a3a1c', { roughness: 0.7 }), shirt = mat('#c0392b'); RIDER_SHIRT = shirt;
+  const vest = mat('#1f2a36', { roughness: 0.6, side: THREE.DoubleSide }), skin = mat('#e0b48a', { roughness: 0.6 });
+  const hatM = mat('#d8c49a'), boot = mat('#4a2c16', { roughness: 0.5 }), glove = mat('#e8d6a8');
+  const gold = mat('#d4a845', { metalness: 0.7, roughness: 0.3 });
+  const rideLegs = new THREE.Group(), standLegs = new THREE.Group(); root.add(rideLegs, standLegs);
+  for (const s of [1, -1]) {
+    cyl(V3(0, 0, s * 0.12), V3(0.12, -0.2, s * 0.31), 0.1, 0.085, chaps, rideLegs);
+    mesh(SPH, chaps, rideLegs, 0.12, -0.2, s * 0.31, 0.085, 0.085, 0.085);
+    cyl(V3(0.12, -0.2, s * 0.31), V3(0.03, -0.64, s * 0.34), 0.085, 0.07, chaps, rideLegs);
+    mesh(BOX, boot, rideLegs, 0.09, -0.69, s * 0.34, 0.26, 0.1, 0.11);
+    cyl(V3(0.03, -0.62, s * 0.34), V3(0.03, -0.5, s * 0.34), 0.075, 0.075, boot, rideLegs);
+    const spur = mesh(new THREE.TorusGeometry(0.04, 0.01, 6, 12), gold, rideLegs, -0.08, -0.68, s * 0.34); spur.rotation.y = Math.PI / 2;
+    cyl(V3(0, 0, s * 0.12), V3(0, -0.6, s * 0.13), 0.1, 0.075, chaps, standLegs);
+    mesh(BOX, boot, standLegs, 0.06, -0.64, s * 0.13, 0.26, 0.1, 0.11);
+  }
+  cyl(V3(0, 0.02, 0), V3(0, 0.62, 0), 0.19, 0.21, shirt, root, 18);            // torso
+  mesh(new THREE.CylinderGeometry(0.225, 0.205, 0.5, 18, 1, true, Math.PI * 0.35, Math.PI * 1.3), vest, root, 0, 0.36, 0);   // open vest
+  mesh(new THREE.CylinderGeometry(0.215, 0.2, 0.07, 18), gold, root, 0, 0.06, 0);   // belt
+  mesh(BOX, gold, root, 0.2, 0.06, 0, 0.04, 0.09, 0.12);                           // buckle
+  for (const s of [1, -1]) mesh(SPH, shirt, root, 0, 0.6, s * 0.2, 0.1, 0.1, 0.1);  // shoulders
+  cyl(V3(0, 0.62, 0), V3(0.01, 0.74, 0), 0.07, 0.065, skin, root);                 // neck
+  mesh(new THREE.ConeGeometry(0.12, 0.14, 12), mat('#d94a2a'), root, 0.06, 0.64, 0).rotation.z = -1.4;   // bandana
+  mesh(SPH, skin, root, 0.02, 0.84, 0, 0.15, 0.17, 0.145);
+  mesh(SPH, skin, root, 0.16, 0.83, 0, 0.03, 0.04, 0.03);                         // nose
+  const hairM = mat('#3a2414', { roughness: 0.9 }), pupilM = mat('#1a1210', { roughness: 0.2 });
+  for (const s of [1, -1]) {
+    mesh(SPH, mat('#f6f2ea', { roughness: 0.2 }), root, 0.135, 0.885, s * 0.055, 0.02, 0.022, 0.024);   // eye
+    mesh(SPH, pupilM, root, 0.152, 0.885, s * 0.057, 0.011, 0.013, 0.013);
+    mesh(BOX, hairM, root, 0.15, 0.918, s * 0.056, 0.02, 0.012, 0.045);           // brow
+    mesh(SPH, skin, root, 0.0, 0.84, s * 0.15, 0.03, 0.045, 0.02);                 // ear
+  }
+  mesh(BOX, mat('#7a2a20'), root, 0.15, 0.772, 0, 0.02, 0.012, 0.06);              // mouth
+  mesh(SPH, hairM, root, -0.07, 0.86, 0, 0.11, 0.12, 0.14);                        // hair under the hat
+  // every player gets their own look
+  const looks = [], look = fn => { const g = new THREE.Group(); root.add(g); fn(g); looks.push(g); };
+  look(g => {   // horseshoe mustache
+    mesh(BOX, hairM, g, 0.165, 0.802, 0, 0.03, 0.022, 0.11);
+    for (const s of [1, -1]) mesh(BOX, hairM, g, 0.162, 0.77, s * 0.05, 0.025, 0.06, 0.018);
+  });
+  look(g => {   // big bushy beard
+    mesh(SPH, hairM, g, 0.09, 0.76, 0, 0.1, 0.1, 0.14);
+    mesh(BOX, hairM, g, 0.165, 0.802, 0, 0.025, 0.02, 0.1);
+  });
+  look(g => {   // mirrored aviators
+    for (const s of [1, -1]) mesh(SPH, mat('#101418', { metalness: 0.7, roughness: 0.12 }), g, 0.158, 0.885, s * 0.055, 0.02, 0.03, 0.042);
+    mesh(BOX, gold, g, 0.168, 0.9, 0, 0.01, 0.01, 0.05);
+  });
+  look(g => {   // goatee
+    mesh(SPH, hairM, g, 0.14, 0.73, 0, 0.035, 0.045, 0.035);
+    mesh(BOX, hairM, g, 0.163, 0.8, 0, 0.02, 0.015, 0.07);
+  });
+  look(g => {   // old-timer handlebar
+    mesh(BOX, hairM, g, 0.168, 0.802, 0, 0.03, 0.025, 0.1);
+    for (const s of [1, -1]) mesh(SPH, hairM, g, 0.166, 0.82, s * 0.075, 0.02, 0.03, 0.03);
+  });
+  const brim = mesh(new THREE.CylinderGeometry(0.31, 0.31, 0.02, 28), hatM, root, 0.02, 0.97, 0); brim.scale.set(1.15, 1, 0.9);
+  mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.2, 20), hatM, root, 0.02, 1.08, 0);
+  mesh(new THREE.CylinderGeometry(0.172, 0.172, 0.04, 20), mat('#5a1d12'), root, 0.02, 1.0, 0);
+  // rope hand stays on the bull rope
+  cyl(V3(0.02, 0.6, 0.22), V3(0.2, 0.3, 0.26), 0.06, 0.055, shirt, root);
+  mesh(SPH, shirt, root, 0.2, 0.3, 0.26, 0.055, 0.055, 0.055);
+  cyl(V3(0.2, 0.3, 0.26), V3(0.18, 0.0, 0.08), 0.055, 0.05, shirt, root);
+  mesh(SPH, glove, root, 0.18, -0.02, 0.08, 0.07, 0.07, 0.07);
+  // free hand waves in the air — never touch the bull!
+  const freeArm = new THREE.Group(); freeArm.position.set(0.02, 0.62, -0.22); root.add(freeArm);
+  cyl(V3(0, 0, 0), V3(0, 0.56, 0), 0.06, 0.05, shirt, freeArm);
+  mesh(SPH, glove, freeArm, 0, 0.6, 0, 0.07, 0.07, 0.07);
+  return { root, rideLegs, standLegs, freeArm, skinM: skin, hairM, looks };
+}
+let RIDER_SHIRT = null;
+const rider = buildRider(); scene.add(rider.root);
+const PCOLORS_LIN = PCOLORS.map(C);
+const SKIN_LIN = ['#e0b48a', '#c68863', '#f1c8a5', '#8d5a3c', '#e8c0a0'].map(C);
+const HAIR_LIN = ['#3a2414', '#1a1210', '#c88a3c', '#0e0a08', '#dcd8d0'].map(C);
+
+// ---------- dust + steam sprites ----------
+const puffTex = canvasTex(64, 64, g => {
+  const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.5, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+});
+const MAX_PARTS = 260, sprites = [];
+const dustCol = C('#b48c62'), steamCol = C('#f2f2f2');
+for (let i = 0; i < MAX_PARTS; i++) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, transparent: true, depthWrite: false }));
+  sp.visible = false; scene.add(sp); sprites.push(sp);
+}
+function syncParts() {
+  for (let i = 0; i < MAX_PARTS; i++) {
+    const sp = sprites[i], p = parts[i];
+    if (!p) { sp.visible = false; continue; }
+    sp.visible = true; sp.position.set(toWX(p.x), toWY(p.y), p.z || 0);
+    const s = p.r / S * (p.steam ? 2.4 : 3.2); sp.scale.set(s, s, 1);
+    const a = clamp(p.life / p.max, 0, 1);
+    sp.material.opacity = a * (p.steam ? 0.5 : 0.42);
+    sp.material.color.copy(p.steam ? steamCol : dustCol);
+  }
+}
+
+// seat position in logical space, used when the rider leaves the bull
+function seat() {
+  if (!curBull) return { x: R.bx, y: GY - 130 };
+  curBull.seat.getWorldPosition(tmpV);
+  return { x: tmpV.x * S + W / 2, y: GY - tmpV.y * S };
+}
+
+let camX = -2;
+function render3D() {
+  const b = bull();
+  const m = bullModels[b.name] || (bullModels[b.name] = buildBull(b));
+  if (curBull !== m) { if (curBull) scene.remove(curBull.root); scene.add(m.root); curBull = m; }
+  const showWorld = G.mode !== 'final';
+  m.root.visible = contact.visible = showWorld;
+  m.root.position.set(toWX(R.bx + R.lurch), R.hop / S, 0);
+  const cs = 4.2 - R.hop / S * 1.5; contact.position.x = toWX(R.bx + R.lurch); contact.scale.set(cs, cs * 0.55, 1);
+  contact.material.opacity = 1 - clamp(R.hop / 50, 0, 0.6);
+  m.yaw.rotation.y = R.spinPhase + clamp(R.lurchV * 0.0009, -0.35, 0.35);   // hips twist with the yank
+  m.pitch.rotation.z = -R.pitch;
+  const gait = R.ph * 2, s1 = Math.sin(gait), s2 = Math.sin(gait + Math.PI);
+  const tuck = clamp(R.hop / 26, 0, 1), kick = clamp(R.pitch * 2.6, 0, 1);
+  [[0.1 + s1 * 0.22 + tuck * 0.55, -0.05 - tuck * 1.5], [0.1 + s2 * 0.22 + tuck * 0.55, -0.05 - tuck * 1.5],
+   [-0.15 + s2 * 0.2 - kick, 0.3 - kick * 0.1], [-0.15 + s1 * 0.2 - kick, 0.3 - kick * 0.1]].forEach(([a1, a2], i) => {
+    m.legs[i].hip.rotation.z = a1; m.legs[i].knee.rotation.z = a2;
+  });
+  m.tail.forEach((g, i) => {
+    g.rotation.z = i ? -0.1 - R.pitch * 0.3 : -0.45 - R.pitch * 2.2 - kick * 0.4;
+    g.rotation.x = Math.sin(T * 5 + R.ph + i * 0.6) * 0.16;
+  });
+  m.head.rotation.z = -(0.55 + Math.sin(R.ph) * 0.15 + (R.tel ? 0.3 : 0));
+  // nostrils flare when he's winding up; tongue flops out on the big kicks
+  const flare = R.tel ? 1.35 + Math.sin(T * 30) * 0.1 : 1;
+  m.nostrils.forEach(n => n.scale.set(0.05 * flare, 0.07 * flare, 0.05 * flare));
+  m.tongue.visible = R.pitch > 0.18 || R.hop > 22;
+  m.root.updateMatrixWorld(true);
+  m.nose.getWorldPosition(tmpV);
+  R.nose = { x: tmpV.x * S + W / 2, y: GY - tmpV.y * S, z: tmpV.z };
+
+  // rider: on the bull, or tumbling through the air
+  const r = rider;
+  const pi = G.players > 1 ? G.cur : 0;
+  RIDER_SHIRT.color.copy(PCOLORS_LIN[pi]);
+  r.skinM.color.copy(SKIN_LIN[pi]); r.hairM.color.copy(HAIR_LIN[pi]);
+  r.looks.forEach((g, i) => { g.visible = i === pi; });
+  r.freeArm.rotation.x = -0.55 + Math.sin(T * 9) * 0.35; r.freeArm.rotation.z = 0.25;
+  if (showWorld && (R.state === 'chute' || R.state === 'on')) {
+    r.root.visible = true;
+    m.seat.getWorldPosition(r.root.position);
+    // lean happens in screen space so it matches the balance bar
+    tmpQ.setFromAxisAngle(AZ, -R.bal * 1.1);
+    tmpQ2.setFromAxisAngle(AY, R.spinPhase); tmpQ.multiply(tmpQ2);
+    tmpQ2.setFromAxisAngle(AZ, -R.pitch * 0.5); tmpQ.multiply(tmpQ2);
+    r.root.quaternion.copy(tmpQ);
+    r.rideLegs.visible = true; r.standLegs.visible = false;
+  } else if (showWorld && R.rag) {
+    r.root.visible = true;
+    r.root.position.set(toWX(R.rag.x), toWY(R.rag.y), 0.9);
+    tmpQ.setFromAxisAngle(AZ, -R.rag.rot);
+    tmpQ2.setFromAxisAngle(AY, R.rag.vx >= 0 ? 0 : Math.PI); tmpQ.multiply(tmpQ2);
+    r.root.quaternion.copy(tmpQ);
+    const stand = R.rag.pose === 'stand';
+    r.rideLegs.visible = !stand; r.standLegs.visible = stand;
+  } else r.root.visible = false;
+
+  gate.rotation.y = -(1 - G.gate) * Math.PI / 2;
+  updateCrowd();
+  syncParts();
+
+  // camera trails the bull with a slow drift; hard moves shake it
+  camX += (toWX(R.bx) * 0.55 - camX) * 0.06;
+  const sh = G.mode === 'ride' && R.state === 'on' ? Math.abs(R.pitchV) * 0.4 / S : 0;
+  camera.position.set(camX + Math.sin(T * 0.13) * 0.4 + rand(-sh, sh), 2.7 + Math.sin(T * 0.21) * 0.1 + rand(-sh, sh), 8.8);
+  camera.lookAt(camX * 0.9, 1.45, 0);
+  camera.updateMatrixWorld();
+  tmpV.set(toWX(R.bx), R.hop / S + 2.9, 0).project(camera);
+  bullScreen.x = (tmpV.x + 1) / 2 * W; bullScreen.y = (1 - tmpV.y) / 2 * H;
+  if (composer) composer.render(); else renderer.render(scene, camera);
+}
+// darken the corners so the eye goes to the bull
+function drawVignette() {
+  const g = ctx.createRadialGradient(W / 2, H * 0.55, H * 0.35, W / 2, H * 0.55, W * 0.62);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.5)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+
+function drawTelegraph() {
+  const t = R.tel; if (!t) return;
+  const x = clamp(bullScreen.x, 120, W - 120), y = clamp(bullScreen.y - 40, 130, 260);
+  const k = clamp(t.time / t.max, 0, 1);
+  const pulse = 1 + Math.sin(T * 30) * 0.04;
+  ctx.save(); ctx.translate(x, y); ctx.scale(pulse, pulse);
+  let label, col;
+  if (t.type === 'drop') { label = 'SIT DEEP  ▼'; col = '#ffd84d'; }
+  else { label = t.dir > 0 ? '◀  LEAN' : 'LEAN  ▶'; col = t.type === 'whip' ? '#ff9f43' : '#7CFF8A'; }
+  ctx.fillStyle = 'rgba(10,6,4,.8)'; rr(-110, -30, 220, 60, 14); ctx.fill();
+  ctx.strokeStyle = col; ctx.lineWidth = 3; rr(-110, -30, 220, 60, 14); ctx.stroke();
+  text(label, 0, -6, 30, col);
+  const hint = t.type === 'drop' ? 'S / ↓' : (t.dir > 0 ? 'A / ←' : 'D / →');
+  if (!isTouch) text(hint, 0, 18, 12, 'rgba(255,255,255,.6)', 'center', 'normal');
+  ctx.fillStyle = col; ctx.fillRect(-100, 26, 200 * k, 3);
+  ctx.restore();
+}
+
+function drawHUD() {
+  const b = bull();
+  // scoreboard
+  ctx.fillStyle = 'rgba(12,8,6,.85)'; rr(W / 2 - 160, 8, 320, 66, 10); ctx.fill();
+  ctx.strokeStyle = '#d4a845'; ctx.lineWidth = 2; rr(W / 2 - 160, 8, 320, 66, 10); ctx.stroke();
+  const t = G.mode === 'ride' ? (R.state === 'on' ? R.t : R.finalT) : (G.mode === 'result' ? R.finalT : 0);
+  const tcol = t >= 8 ? '#7CFF8A' : (R.state === 'off' ? '#ff5a4a' : '#ffe9a8');
+  text(t.toFixed(2), W / 2, 44, 40, tcol);
+  text(`BULL ${G.round + 1}/${TOUR_LEN} · ${b.name.toUpperCase()}`, W / 2, 20, 12, '#d4a845');
+  // progress to 8
+  ctx.fillStyle = '#333'; ctx.fillRect(W / 2 - 140, 66, 280, 4);
+  ctx.fillStyle = tcol; ctx.fillRect(W / 2 - 140, 66, 280 * clamp(t / 8, 0, 1), 4);
+  // past the whistle the bar keeps sweeping in gold so you can feel the overtime ticking
+  if (t > 8) { ctx.fillStyle = '#ffd84d'; ctx.fillRect(W / 2 - 140, 66, 280 * (((t - 8) % 2) / 2), 4); }
+  if (R.qualified && G.mode === 'ride') {
+    ctx.fillStyle = 'rgba(12,8,6,.85)'; rr(W / 2 - 110, 78, 220, 26, 8); ctx.fill();
+    text(`OVERTIME  +${R.bonus.toFixed(2)}`, W / 2, 91, 15, '#7CFF8A');
+  }
+  // tour total
+  const total = totalOf(G.results), multi = G.players > 1;
+  ctx.fillStyle = 'rgba(12,8,6,.75)'; rr(12, 12, 150, 50, 8); ctx.fill();
+  if (multi) { ctx.fillStyle = PCOLORS[G.cur]; rr(12, 12, 6, 50, 3); ctx.fill(); }
+  text(multi ? pname(G.cur) + ' POINTS' : 'TOUR POINTS', 87, 27, 11, multi ? PCOLORS[G.cur] : '#d4a845');
+  text(total.toFixed(2), 87, 47, 20, '#fff');
+  if (multi) {
+    ctx.fillStyle = 'rgba(12,8,6,.6)'; rr(12, 66, 150, 8 + G.players * 17, 8); ctx.fill();
+    G.all.forEach((list, i) => {
+      text('P' + (i + 1), 24, 82 + i * 17, 12, PCOLORS[i], 'left');
+      text(totalOf(list).toFixed(2), 150, 82 + i * 17, 12, i === G.cur ? '#fff' : 'rgba(255,255,255,.65)', 'right', i === G.cur ? 'bold' : 'normal');
+    });
+  }
+  if (G.mode !== 'ride' || R.state !== 'on') return;
+  // grip
+  ctx.fillStyle = 'rgba(12,8,6,.75)'; rr(W - 172, 12, 160, 50, 8); ctx.fill();
+  text('GRIP' + (isTouch ? '' : ' (SPACE)'), W - 92, 26, 11, '#d4a845');
+  ctx.fillStyle = '#333'; ctx.fillRect(W - 160, 40, 136, 12);
+  ctx.fillStyle = R.grip < 0.25 ? '#ff5a4a' : (held('grip') ? '#ffd84d' : '#e8d6a8');
+  ctx.fillRect(W - 160, 40, 136 * R.grip, 12);
+  // balance meter
+  const bx = 330, bw = 300, by = 500;
+  const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+  g.addColorStop(0, '#d63031'); g.addColorStop(0.25, '#fdcb6e'); g.addColorStop(0.5, '#00b894');
+  g.addColorStop(0.75, '#fdcb6e'); g.addColorStop(1, '#d63031');
+  ctx.fillStyle = 'rgba(0,0,0,.55)'; rr(bx - 8, by - 22, bw + 16, 44, 10); ctx.fill();
+  ctx.fillStyle = g; rr(bx, by - 6, bw, 12, 6); ctx.fill();
+  const mx = bx + bw / 2 + R.bal * bw / 2;
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(mx, by - 8); ctx.lineTo(mx - 8, by - 20); ctx.lineTo(mx + 8, by - 20); ctx.fill();
+  ctx.fillRect(mx - 2, by - 8, 4, 16);
+  text('BALANCE', bx + bw / 2, by + 15, 10, 'rgba(255,255,255,.7)');
+  if (R.spin) shadowText('SPINNING ' + (R.spin.dir > 0 ? '⟳' : '⟲'), W / 2, 122, 18, '#ff9f43');
+  if (R.qualified) {
+    const j = JUMP_BTN;
+    ctx.fillStyle = 'rgba(20,90,40,.85)'; rr(j.x, j.y, j.w, j.h, 12); ctx.fill();
+    ctx.strokeStyle = '#7CFF8A'; ctx.lineWidth = 2; rr(j.x, j.y, j.w, j.h, 12); ctx.stroke();
+    text(isTouch ? 'JUMP OFF' : 'JUMP OFF (ENTER)', W / 2, j.y + j.h / 2, 18, '#fff');
+  }
+  // touch buttons
+  if (isTouch) for (const btn of BTNS) {
+    const on = held(btn.id);
+    ctx.fillStyle = on ? 'rgba(212,168,69,.75)' : 'rgba(12,8,6,.55)'; rr(btn.x, btn.y, btn.w, btn.h, 14); ctx.fill();
+    ctx.strokeStyle = '#d4a845'; ctx.lineWidth = 2; rr(btn.x, btn.y, btn.w, btn.h, 14); ctx.stroke();
+    text(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2, 20, on ? '#1a0f08' : '#f3d58a');
+  }
+}
+
+function panel(x, y, w, h) {
+  ctx.fillStyle = 'rgba(14,9,6,.9)'; rr(x, y, w, h, 16); ctx.fill();
+  ctx.strokeStyle = '#d4a845'; ctx.lineWidth = 3; rr(x, y, w, h, 16); ctx.stroke();
+}
+function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+const blink = () => 0.55 + 0.45 * Math.sin(T * 4);
+
+function drawMenu() {
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(0, 0, W, H);
+  shadowText('THUNDERHOOF', W / 2 + 90, 150, 84, '#f3d58a');
+  text('A BULL RIDING SHOWDOWN AT THE DUSTBOWL', W / 2 + 90, 212, 20, '#e8d6a8');
+  panel(W / 2 - 110, 240, 400, 170);
+  const tap = isTouch;
+  const lines = tap
+    ? [['◀ / ▶', 'lean against the throw'], ['SIT ▼', 'sit deep when the bull drops'], ['GRIP', 'hold on tight (drains fast)'], ['', '8 sec to score — stay on for bonus!']]
+    : [['A D / ← →', 'lean against the throw'], ['S / ↓', 'sit deep when the bull drops'], ['SPACE', 'grip tight (drains fast)'], ['', '8 sec to score — stay on for bonus!']];
+  lines.forEach((l, i) => {
+    text(l[0], W / 2 - 80, 270 + i * 34, 17, '#ffd84d', 'left');
+    text(l[1], W / 2 + 40, 270 + i * 34, 16, '#fff', 'left', 'normal');
+  });
+  text('PLAYERS', W / 2 - 40, 447, 16, '#d4a845', 'right');
+  for (const b of PLAYER_BTNS) {
+    const on = b.n === G.players;
+    ctx.fillStyle = on ? PCOLORS[b.n - 1] : 'rgba(14,9,6,.85)'; rr(b.x, b.y, b.w, b.h, 9); ctx.fill();
+    ctx.strokeStyle = on ? '#fff' : '#d4a845'; ctx.lineWidth = 2; rr(b.x, b.y, b.w, b.h, 9); ctx.stroke();
+    text(String(b.n), b.x + b.w / 2, b.y + b.h / 2 + 1, 20, on ? '#fff' : '#f3d58a');
+  }
+  if (!tap) text('1–5 or ← →', W / 2 + 290, 447, 12, 'rgba(255,255,255,.55)', 'left', 'normal');
+  ctx.globalAlpha = blink();
+  shadowText(tap ? 'TAP TO ENTER THE CHUTE' : 'PRESS SPACE TO ENTER THE CHUTE', W / 2 + 90, 490, 22, '#fff');
+  ctx.globalAlpha = 1;
+  text(`${BULLS.length} bulls in the pen · 5 drawn each tour` + (best > 0 ? '  ·  Best tour: ' + best.toFixed(2) : ''), W / 2 + 90, 522, 14, '#d4a845');
+}
+function drawChutePrompt() {
+  const b = bull();
+  if (G.players > 1) shadowText(pname(G.cur) + ' — YOUR TURN', W / 2 + 140, 128, 26, PCOLORS[G.cur]);
+  panel(W / 2 - 60, 150, 400, 172);
+  text(`BULL ${G.round + 1} OF ${TOUR_LEN}`, W / 2 + 140, 178, 14, '#d4a845');
+  shadowText(b.name.toUpperCase(), W / 2 + 140, 212, 32, '#f3d58a');
+  text('RANK  ' + stars(b.diff), W / 2 + 140, 244, 18, '#ffd84d');
+  text(STYLES[b.style || 'mixed'].label, W / 2 + 140, 270, 15, '#e8d6a8', 'center', 'normal');
+  ctx.globalAlpha = G.opening ? 1 : blink();
+  text(G.opening ? 'OUTSIDE!' : (isTouch ? 'Tap to nod your head' : 'Press SPACE to nod your head'), W / 2 + 140, 302, 17, '#fff', 'center', 'normal');
+  ctx.globalAlpha = 1;
+}
+function drawResult() {
+  const b = bull(), k = clamp(G.resT * 3, 0, 1);
+  ctx.fillStyle = `rgba(0,0,0,${0.45 * k})`; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k); ctx.globalAlpha = k;
+  panel(-220, -150, 440, 300);
+  text((G.players > 1 ? pname(G.cur) + ' · ' : '') + b.name.toUpperCase(), 0, -118, 18, G.players > 1 ? PCOLORS[G.cur] : '#d4a845');
+  if (R.score) {
+    shadowText('QUALIFIED RIDE', 0, -82, 34, '#7CFF8A');
+    text('Rider', -130, -30, 16, '#e8d6a8'); text(R.score.rider.toFixed(2), -130, 0, 28, '#fff');
+    text('Bull', 0, -30, 16, '#e8d6a8'); text(R.score.bull.toFixed(2), 0, 0, 28, '#fff');
+    text('Overtime', 130, -30, 16, '#e8d6a8');
+    text('+' + R.score.bonus.toFixed(2), 130, 0, 28, '#7CFF8A');
+    text(`Rode ${R.finalT.toFixed(2)}s` + (R.state === 'off' ? ' — bucked off in overtime' : ''), 0, 104, 13, '#e8d6a8', 'center', 'normal');
+    ctx.fillStyle = '#d4a845'; ctx.fillRect(-150, 30, 300, 2);
+    shadowText(R.score.total.toFixed(2) + ' PTS', 0, 70, 46, '#ffd84d');
+  } else {
+    shadowText('NO SCORE', 0, -82, 38, '#ff5a4a');
+    text(`Bucked off at ${R.finalT.toFixed(2)}s`, 0, -20, 22, '#fff', 'center', 'normal');
+    text(['The bull wins this round.', 'Cowboy up — next one.', 'Shake off the dirt.'][G.round % 3], 0, 20, 18, '#e8d6a8', 'center', 'normal');
+  }
+  ctx.globalAlpha = k * blink();
+  const go = isTouch ? 'Tap' : 'SPACE';
+  const nextLine = G.cur < G.players - 1 ? `${go} — ${pname(G.cur + 1)}'s turn`
+    : G.round + 1 >= TOUR_LEN ? `${go} for tour results` : `${go} for the next bull`;
+  text(nextLine, 0, 128, 16, '#fff', 'center', 'normal');
+  ctx.restore();
+}
+function drawFinal() {
+  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H);
+  if (G.players > 1) return drawLeaderboard();
+  panel(W / 2 - 260, 60, 520, 420);
+  shadowText('TOUR RESULTS', W / 2, 105, 38, '#f3d58a');
+  G.results.forEach((r, i) => {
+    const y = 160 + i * 42;
+    text(G.tour[i].name, W / 2 - 220, y, 20, '#fff', 'left', 'normal');
+    text(stars(G.tour[i].diff), W / 2 + 10, y, 14, '#ffd84d');
+    text(r.score != null ? `${r.score.toFixed(2)}  (${r.time.toFixed(1)}s)` : `—  (${r.time.toFixed(2)}s)`, W / 2 + 220, y, 20, r.score != null ? '#7CFF8A' : '#ff5a4a', 'right');
+  });
+  const total = G.results.reduce((s, r) => s + (r.score || 0), 0);
+  const rides = G.results.filter(r => r.score != null).length;
+  ctx.fillStyle = '#d4a845'; ctx.fillRect(W / 2 - 220, 370, 440, 2);
+  text(`${rides}/${TOUR_LEN} RIDES`, W / 2 - 220, 400, 20, '#e8d6a8', 'left');
+  shadowText(total.toFixed(2), W / 2 + 220, 400, 34, '#ffd84d', 'right');
+  const title = rides === 5 ? 'WORLD CHAMPION!' : rides >= 3 ? 'Buckle contender' : rides >= 1 ? 'Rookie of the year' : 'The bulls say thanks';
+  text(G.newBest ? 'NEW BEST — ' + title : title, W / 2, 440, 18, G.newBest ? '#7CFF8A' : '#fff');
+  ctx.globalAlpha = blink();
+  text(isTouch ? 'Tap to play again' : 'SPACE to play again', W / 2, 505, 16, '#fff', 'center', 'normal');
+  ctx.globalAlpha = 1;
+}
+
+function drawLeaderboard() {
+  const order = G.all.map((list, i) => ({ i, total: totalOf(list), rides: list.filter(r => r.score != null).length, list }))
+    .sort((a, b) => b.total - a.total);
+  const tie = order.length > 1 && order[0].total === order[1].total;
+  const h = 150 + G.players * 52;
+  const top = H / 2 - h / 2 - 10;
+  panel(W / 2 - 300, top, 600, h);
+  if (tie) shadowText("IT'S A TIE!", W / 2, top + 42, 38, '#f3d58a');
+  else shadowText(pname(order[0].i) + ' WINS!', W / 2, top + 42, 38, PCOLORS[order[0].i]);
+  text('BUCKLE OF THE DUSTBOWL', W / 2, top + 74, 13, '#d4a845');
+  order.forEach((o, rank) => {
+    const y = top + 112 + rank * 52;
+    if (rank === 0 && !tie) { ctx.fillStyle = 'rgba(212,168,69,.15)'; rr(W / 2 - 280, y - 22, 560, 44, 8); ctx.fill(); }
+    text(['1st', '2nd', '3rd', '4th', '5th'][rank], W / 2 - 262, y, 18, '#ffd84d', 'left');
+    ctx.fillStyle = PCOLORS[o.i]; ctx.beginPath(); ctx.arc(W / 2 - 200, y, 8, 0, 7); ctx.fill();
+    text(pname(o.i), W / 2 - 184, y, 20, '#fff', 'left');
+    // one pip per bull: green = rode it, red = bucked off
+    o.list.forEach((r, k) => { ctx.fillStyle = r.score != null ? '#7CFF8A' : '#ff5a4a'; ctx.beginPath(); ctx.arc(W / 2 + 10 + k * 18, y, 5, 0, 7); ctx.fill(); });
+    text(`${o.rides}/${TOUR_LEN}`, W / 2 + 120, y, 15, '#e8d6a8', 'left', 'normal');
+    shadowText(o.total.toFixed(2), W / 2 + 262, y, 24, rank === 0 ? '#ffd84d' : '#fff', 'right');
+  });
+  if (G.newBest) text('NEW BEST TOUR!', W / 2, top + h - 24, 16, '#7CFF8A');
+  ctx.globalAlpha = blink();
+  text(isTouch ? 'Tap to play again' : 'SPACE to play again', W / 2, Math.min(H - 16, top + h + 26), 16, '#fff', 'center', 'normal');
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  render3D();
+  ctx.clearRect(0, 0, W, H);
+  drawVignette();
+  for (const m of msgs) {
+    ctx.globalAlpha = clamp(m.life, 0, 1);
+    shadowText(m.text, m.x, m.y, m.size, m.color);
+  }
+  ctx.globalAlpha = 1;
+  if (G.mode === 'ride') { drawTelegraph(); drawHUD(); }
+  else if (G.mode === 'chute') { drawHUD(); drawChutePrompt(); }
+  else if (G.mode === 'menu') drawMenu();
+  else if (G.mode === 'result') { drawHUD(); drawResult(); }
+  else if (G.mode === 'final') drawFinal();
+  drawSoundBtn();
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  musicTick();
+  update(dt); draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

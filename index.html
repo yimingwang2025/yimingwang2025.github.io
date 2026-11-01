@@ -1,255 +1,542 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yiming Wang - Roblox Horror Games | Dandy's World & Scary Sushi Fan</title>
-    <meta name="description" content="Explore Yiming Wang's world of Roblox horror gaming, featuring Dandy's World and Scary Sushi. Join rip_mewtwo for spooky adventures and space exploration insights.">
-    <meta name="keywords" content="Yiming Wang, Roblox, horror games, Dandy's World, Scary Sushi, rip_mewtwo, space exploration">
-    <meta name="author" content="Yiming Wang">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://thechoseone2025.github.io/">
-    
-    <!-- Performance Optimization -->
-    <link rel="preload" href="styles.css" as="style">
-    <link rel="preload" href="script.js" as="script">
-    <link rel="preload" href="cursor-options.js" as="script">
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Creepster&family=Roboto:wght@300;400;700&display=swap" as="style">
-    <meta http-equiv="Cache-control" content="public, max-age=31536000">
-    
-    <!-- Open Graph / Social Media -->
-    <meta property="og:title" content="Yiming Wang - Roblox Horror Gaming World">
-    <meta property="og:description" content="Join Yiming Wang (rip_mewtwo) on a journey through Roblox horror games like Dandy's World and Scary Sushi.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://thechoseone2025.github.io/">
-    
-    <link rel="stylesheet" href="styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yiming Wang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f1fbf4;
+    --card: #ffffff;
+    --ink: #13281c;
+    --muted: #5d7266;
+    --line: #d9eee0;
+    --green: #1fb45f;
+    --green-dark: #11793e;
+    --lime: #a6e35a;
+    --yellow: #ffcd3c;
+    --orange: #ff8a3d;
+    --blue: #3fa7ff;
+    --purple: #9c6bff;
+    --red: #ff4d6d;
+    --hero-top: #1d9e55;
+    --hero-bottom: #0e6b38;
+    --shadow: 0 8px 0 rgba(19, 40, 28, 0.08), 0 18px 40px -20px rgba(19, 40, 28, 0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1a12;
+      --card: #13281c;
+      --ink: #eafbef;
+      --muted: #9dbba8;
+      --line: #23432f;
+      --hero-top: #136b3a;
+      --hero-bottom: #0a3d21;
+      --shadow: 0 8px 0 rgba(0, 0, 0, 0.3), 0 18px 40px -20px rgba(0, 0, 0, 0.7);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Baloo 2", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  .pixel { font-family: "Press Start 2P", monospace; letter-spacing: 0.02em; }
+
+  /* ---------- Nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 5;
+    background: color-mix(in srgb, var(--hero-bottom) 92%, transparent);
+    backdrop-filter: blur(8px);
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 6px;
+    padding: 10px 16px;
+  }
+  nav a {
+    color: #fff; text-decoration: none; font-weight: 700;
+    padding: 4px 12px; border-radius: 999px;
+  }
+  nav a:hover { background: rgba(255,255,255,0.16); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18) 0 2px, transparent 3px) 0 0 / 46px 46px,
+      linear-gradient(180deg, var(--hero-top), var(--hero-bottom));
+    color: #fff;
+    text-align: center;
+    padding: 48px 16px 170px;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: -1px; height: 60px;
+    background: var(--bg);
+    -webkit-mask: radial-gradient(40px 30px at 40px 0, transparent 98%, #000) 0 0 / 80px 60px repeat-x;
+            mask: radial-gradient(40px 30px at 40px 0, transparent 98%, #000) 0 0 / 80px 60px repeat-x;
+  }
+  .float {
+    position: absolute; font-size: 28px; opacity: 0.55;
+    animation: drift 7s ease-in-out infinite;
+  }
+  @keyframes drift { 50% { transform: translateY(-14px) rotate(10deg); } }
+
+  .avatar {
+    width: 128px; height: 128px; margin: 0 auto 20px;
+    border-radius: 36px;
+    background: linear-gradient(145deg, var(--yellow), var(--lime));
+    display: grid; place-items: center;
+    font-size: 70px; cursor: pointer;
+    box-shadow: 0 10px 0 rgba(0,0,0,0.18), inset 0 -6px 0 rgba(0,0,0,0.08);
+    animation: bob 3s ease-in-out infinite;
+    user-select: none;
+  }
+  @keyframes bob { 50% { transform: translateY(-10px) rotate(-4deg); } }
+
+  .hello { font-size: 0.75rem; color: var(--yellow); margin: 0 0 14px; }
+  h1 {
+    font-size: clamp(2.8rem, 11vw, 5rem);
+    font-weight: 800; margin: 0; line-height: 1;
+    text-shadow: 0 5px 0 rgba(0,0,0,0.18);
+  }
+  .tagline { font-size: 1.25rem; margin: 14px auto 0; opacity: 0.92; max-width: 560px; }
+
+  .snake-lane {
+    position: absolute; left: 0; right: 0; bottom: 84px; height: 44px;
+    pointer-events: none;
+  }
+  #snake { position: absolute; top: 0; left: 0; overflow: visible; }
+
+  /* ---------- Layout ---------- */
+  .wrap { max-width: 920px; margin: -70px auto 0; padding: 0 16px 64px; position: relative; }
+  .card {
+    background: var(--card); border-radius: 26px; padding: 26px;
+    box-shadow: var(--shadow); border: 2px solid var(--line);
+  }
+  h2 { margin: 0 0 16px; font-size: 1.8rem; line-height: 1.2; display: flex; align-items: center; gap: 10px; }
+  section { margin-top: 32px; scroll-margin-top: 70px; }
+  .lead { margin-top: 0; font-size: 1.15rem; }
+
+  /* ---------- Character card ---------- */
+  .player { display: grid; grid-template-columns: 210px 1fr; gap: 26px; align-items: center; }
+  .badge {
+    background: var(--ink); color: var(--lime);
+    border-radius: 22px; padding: 18px; text-align: center;
+  }
+  .badge .big { font-size: 64px; line-height: 1.1; }
+  .badge small { display: block; font-size: 0.55rem; color: var(--yellow); margin-top: 10px; line-height: 1.8; }
+  .stats { display: grid; gap: 12px; }
+  .stat-row { display: grid; grid-template-columns: 170px 1fr 34px; align-items: center; gap: 12px; font-weight: 600; }
+  .bar { height: 18px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .bar i {
+    display: block; height: 100%; width: 0; border-radius: 999px;
+    background: repeating-linear-gradient(-45deg, var(--c) 0 12px, color-mix(in srgb, var(--c) 80%, #fff) 12px 24px);
+    transition: width 1.4s cubic-bezier(.2,.8,.2,1);
+  }
+  .stat-row .num { font-size: 0.6rem; color: var(--muted); text-align: right; }
+
+  /* ---------- Tiles ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .tile {
+    border-radius: 22px; padding: 18px;
+    background: color-mix(in srgb, var(--c) 14%, var(--card));
+    border: 2px solid color-mix(in srgb, var(--c) 35%, transparent);
+    transition: transform .2s;
+  }
+  .tile:hover { transform: translateY(-4px) rotate(-1deg); }
+  .tile .emoji { font-size: 2.6rem; line-height: 1; }
+  .tile b { display: block; font-size: 0.8rem; color: var(--muted); font-weight: 700; margin-top: 10px; text-transform: uppercase; letter-spacing: .07em; }
+  .tile h3 { margin: 2px 0 0; font-size: 1.35rem; line-height: 1.2; }
+  .tile p { margin: 6px 0 0; color: var(--muted); font-weight: 500; }
+
+  /* ---------- Horror games ---------- */
+  .spooky {
+    background: linear-gradient(160deg, #1b1230, #2c1450);
+    color: #f3eaff; border: 2px solid #3d2468;
+  }
+  .spooky h2 { color: #fff; }
+  .spooky .lead { color: #cbb8ee; }
+  .spooky .tile {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .spooky .tile p, .spooky .tile b { color: #cbb8ee; }
+  .spooky .tile:hover { transform: translateY(-4px) rotate(1deg); }
+  .eyes { animation: blink 4s infinite; display: inline-block; }
+  @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+
+  /* ---------- Space ---------- */
+  .space {
+    position: relative; overflow: hidden; color: #fff;
+    background:
+      radial-gradient(circle at 15% 25%, #fff 0 1px, transparent 2px),
+      radial-gradient(circle at 70% 15%, #fff 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 40% 70%, #fff 0 1px, transparent 2px),
+      radial-gradient(circle at 88% 60%, #fff 0 1px, transparent 2px),
+      radial-gradient(circle at 60% 90%, #fff 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 85% 110%, #3a6bd6 0 120px, transparent 121px),
+      linear-gradient(160deg, #0b1440, #13235e);
+    border: 2px solid #22357a;
+  }
+  .space h2 { color: #fff; }
+  .space p { max-width: min(560px, calc(100% - 80px)); font-size: 1.1rem; }
+  .rocket { position: absolute; right: 30px; top: 26px; font-size: 64px; animation: launch 4s ease-in-out infinite; }
+  @keyframes launch { 50% { transform: translate(6px, -12px) rotate(-6deg); } }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .facts span {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 999px; padding: 4px 14px; font-weight: 600;
+  }
+
+  /* ---------- Games I made ---------- */
+  .game {
+    display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 16px;
+    text-decoration: none; color: #fff;
+    border-radius: 24px; padding: 26px; min-height: 200px;
+    background:
+      radial-gradient(circle at 82% 30%, #ffffff 0 7px, transparent 8px),
+      radial-gradient(ellipse 60% 40% at 80% 115%, #7fdc6a 0 98%, transparent),
+      radial-gradient(ellipse 70% 45% at 15% 120%, #4cc35a 0 98%, transparent),
+      linear-gradient(180deg, #59b8ff, #a7dcff);
+    position: relative; overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform .2s;
+  }
+  .game:hover { transform: translateY(-4px); }
+  .game .flag { position: absolute; right: 24%; top: 22px; font-size: 54px; animation: wave 2s ease-in-out infinite; transform-origin: bottom left; }
+  @keyframes wave { 50% { transform: rotate(-8deg); } }
+  .game h3 { margin: 0; font-size: 2rem; line-height: 1; text-shadow: 0 3px 0 rgba(0,0,0,0.25); }
+  .game p { margin: 6px 0 0; font-weight: 600; text-shadow: 0 2px 0 rgba(0,0,0,0.2); max-width: 420px; }
+  .play {
+    font-size: 0.8rem; background: var(--yellow); color: #3a2a00;
+    padding: 14px 18px; border-radius: 14px;
+    box-shadow: 0 6px 0 #c99400;
+    transition: transform .1s, box-shadow .1s;
+    white-space: nowrap;
+  }
+  .game:hover .play { transform: translateY(2px); box-shadow: 0 4px 0 #c99400; }
+  .game.night {
+    background:
+      radial-gradient(circle at 80% 22%, #fff6c8 0 18px, transparent 19px),
+      radial-gradient(circle at 20% 20%, #fff 0 1px, transparent 2px),
+      radial-gradient(circle at 45% 12%, #fff 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 62% 35%, #fff 0 1px, transparent 2px),
+      radial-gradient(ellipse 60% 40% at 82% 118%, #23325e 0 98%, transparent),
+      radial-gradient(ellipse 75% 45% at 12% 122%, #1a2648 0 98%, transparent),
+      linear-gradient(180deg, #0d1330, #2a2a5e);
+    margin-top: 16px;
+  }
+  .game.night .flag { right: 30%; top: 40px; font-size: 50px; animation: glow 2.4s ease-in-out infinite; filter: drop-shadow(0 0 14px #ffb347); }
+  @keyframes glow { 50% { transform: translateY(-6px); filter: drop-shadow(0 0 24px #ffcf6e); } }
+  .game.rodeo {
+    background:
+      radial-gradient(circle at 78% 34%, #ffe08a 0 26px, transparent 27px),
+      radial-gradient(ellipse 65% 40% at 85% 118%, #a8562a 0 98%, transparent),
+      radial-gradient(ellipse 75% 45% at 12% 122%, #8a4320 0 98%, transparent),
+      linear-gradient(180deg, #ff8a3d, #ffc46b 70%, #e8a560);
+    margin-top: 16px;
+  }
+  .game.rodeo .flag { right: 28%; top: 34px; font-size: 56px; animation: buck 0.9s ease-in-out infinite; transform-origin: bottom center; }
+  @keyframes buck { 25% { transform: rotate(-14deg) translateY(-8px); } 60% { transform: rotate(10deg); } }
+  .dust { position: absolute; bottom: 18px; width: 14px; height: 14px; border-radius: 50%; background: rgba(255,230,190,.7); animation: puff 1.8s ease-out infinite; }
+  @keyframes puff { from { transform: scale(.4); opacity: .9; } to { transform: translate(-30px,-14px) scale(2.2); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .game.rodeo .flag, .dust { animation: none; } }
+  .firefly { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #d9ff6e; box-shadow: 0 0 10px 3px #c8ff3a; animation: fly 5s ease-in-out infinite; }
+  @keyframes fly { 25% { transform: translate(14px,-10px); opacity: .3; } 50% { transform: translate(-6px,-20px); } 75% { transform: translate(-16px,-6px); opacity: .5; } }
+  .soon {
+    margin-top: 14px; border: 3px dashed var(--line); border-radius: 22px;
+    padding: 18px; text-align: center; color: var(--muted); font-weight: 600;
+  }
+
+  /* ---------- Quiz ---------- */
+  .q { margin-bottom: 18px; }
+  .q p { font-weight: 700; font-size: 1.15rem; margin: 0 0 8px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opts button {
+    font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--bg); color: var(--ink);
+    border: 2px solid var(--line); border-radius: 14px; padding: 6px 16px;
+    box-shadow: 0 4px 0 var(--line);
+    transition: transform .1s;
+  }
+  .opts button:hover:not(:disabled) { transform: translateY(-2px); }
+  .opts button.right { background: var(--green); border-color: var(--green-dark); color: #fff; box-shadow: 0 4px 0 var(--green-dark); }
+  .opts button.wrong { background: var(--red); border-color: #c4304c; color: #fff; box-shadow: 0 4px 0 #c4304c; }
+  .opts button:disabled { cursor: default; }
+  .score {
+    margin-top: 6px; padding: 14px; border-radius: 16px; text-align: center;
+    background: var(--ink); color: var(--lime); font-size: 0.75rem; line-height: 1.8;
+  }
+
+  footer { text-align: center; color: var(--muted); margin-top: 48px; font-size: 0.65rem; line-height: 2; }
+
+  .confetti {
+    position: fixed; top: -20px; width: 10px; height: 14px; border-radius: 3px;
+    pointer-events: none; z-index: 10; animation: fall linear forwards;
+  }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  @media (max-width: 640px) {
+    .player { grid-template-columns: 1fr; }
+    .stat-row { grid-template-columns: 1fr 1.2fr 30px; }
+    .game { grid-template-columns: 1fr; }
+    .game .flag { right: 12%; }
+    .rocket { font-size: 44px; right: 16px; top: 16px; }
+    .float:nth-of-type(3), .float:nth-of-type(4) { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="name-container">
-                <h1>Yiming Wang</h1>
-                <p class="tagline">Roblox Horror Game Enthusiast & Space Explorer</p>
-            </div>
-            <nav aria-label="Main navigation">
-                <ul class="main-nav">
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#games">Games</a></li>
-                    <li><a href="#creators">Creators</a></li>
-                    <li><a href="#interests">Interests</a></li>
-                    <li><a href="#quiz">Quiz</a></li>
-                </ul>
-            </nav>
-        </header>
 
-        <main>
-            <section id="about" class="about">
-                <h2>About Me</h2>
-                <div class="about-content">
-                    <div class="bio">
-                        <p>Hi! I'm Yiming Wang, a 2nd grader and unprofessional video gamer with a passion for horror games and space exploration!</p>
-                        <p>When I'm not solving math problems or working on science projects, you'll find me navigating the spooky realms of my favorite Roblox games.</p>
-                        <p>Find me on Roblox as <strong>rip_mewtwo</strong>!</p>
-                        <p>I also enjoy drawing game characters and scenes in my free time.</p>
-                    </div>
-                </div>
-            </section>
+<nav>
+  <a href="#about">About</a>
+  <a href="#horror">Horror game</a>
+  <a href="#space">Space</a>
+  <a href="#games">My games</a>
+  <a href="#quiz">Quiz</a>
+</nav>
 
-            <section id="games" class="gaming">
-                <h2>My Favorite Horror Games</h2>
-                <div class="game-cards">
-                    <article class="game-card" data-game="dandys-world">
-                        <div class="game-image dandys-world" role="img" aria-label="Dandy's World game screenshot showing the creepy amusement park"></div>
-                        <h3>Dandy's World</h3>
-                        <p>Survive the creepy amusement park if you dare!</p>
-                    </article>
-                    <article class="game-card" data-game="scary-sushi">
-                        <div class="game-image scary-sushi" role="img" aria-label="Scary Sushi game screenshot showing the horror-themed sushi restaurant"></div>
-                        <h3>Scary Sushi</h3>
-                        <p>Where delicious food turns into your worst nightmare!</p>
-                    </article>
-                </div>
-            </section>
+<header class="hero">
+  <span class="float" style="left:8%;top:18%">⭐</span>
+  <span class="float" style="left:84%;top:14%;animation-delay:-2s">🎮</span>
+  <span class="float" style="left:5%;top:44%;animation-delay:-4s">🍟</span>
+  <span class="float" style="left:86%;top:40%;animation-delay:-1s">🥭</span>
+  <span class="float" style="left:70%;top:34%;animation-delay:-3s;font-size:22px">🚀</span>
+  <span class="float" style="left:24%;top:10%;animation-delay:-5s;font-size:22px">👻</span>
 
-            <section id="creators" class="creators">
-                <h2>Game Creators</h2>
-                <div class="creator-cards">
-                    <article class="creator-card" data-creator="blushcrunch">
-                        <div class="creator-logo blushcrunch-logo" role="img" aria-label="BlushCrunch Studio logo"></div>
-                        <h3>BlushCrunch Studio</h3>
-                        <p>Creators of Dandy's World</p>
-                        <button class="creator-info-btn" data-creator="blushcrunch">Learn More</button>
-                    </article>
-                    <article class="creator-card" data-creator="eviltwin">
-                        <div class="creator-logo eviltwin-logo" role="img" aria-label="Evil Twin Games logo"></div>
-                        <h3>Evil Twin Games</h3>
-                        <p>Developers of Scary Sushi</p>
-                        <button class="creator-info-btn" data-creator="eviltwin">Learn More</button>
-                    </article>
-                </div>
-            </section>
-            
-            <section id="interests" class="interests">
-                <h2>My Other Interests</h2>
-                <div class="interest-grid">
-                    <article class="interest-card space">
-                        <h3>Space Exploration</h3>
-                        <p>I've visited Kennedy Space Center multiple times and love learning about Apollo missions!</p>
-                    </article>
-                    <article class="interest-card math">
-                        <h3>Math & Science</h3>
-                        <p>Solving problems and discovering how the world works is exciting!</p>
-                    </article>
-                    <article class="interest-card engineering">
-                        <h3>Engineering</h3>
-                        <p>Building and designing new things is one of my favorite activities.</p>
-                    </article>
-                    <article class="interest-card design">
-                        <h3>Creative Design</h3>
-                        <p>I enjoy making digital art and designs using Canva.</p>
-                    </article>
-                </div>
-            </section>
-            
-            <section id="quiz" class="quiz">
-                <h2>Test Your Knowledge About Me</h2>
-                <div class="quiz-container">
-                    <p class="quiz-intro">Think you know me well? Take this fun quiz to find out!</p>
-                    <div id="quiz-questions">
-                        <!-- Questions will be loaded by JavaScript -->
-                    </div>
-                    <div class="quiz-controls">
-                        <button id="submit-quiz" class="quiz-button">Check Answers</button>
-                        <button id="reset-quiz" class="quiz-button">Try Again</button>
-                    </div>
-                    <div id="quiz-results" class="quiz-results">
-                        <h3>Your Score: <span id="quiz-score">0</span>/<span id="quiz-total">0</span></h3>
-                        <p id="quiz-message"></p>
-                    </div>
-                </div>
-            </section>
-        </main>
+  <div class="avatar" id="avatar" title="Tap me!">🐍</div>
+  <p class="hello pixel">PLAYER 1 READY</p>
+  <h1>Yiming Wang</h1>
+  <p class="tagline">Future game developer &amp; astronaut · horror game fan · ball python lover</p>
 
-        <footer>
-            <p>© 2025 Yiming Wang | Future Game Developer & Astronaut</p>
-        </footer>
+  <div class="snake-lane"><svg id="snake" width="1" height="44"></svg></div>
+</header>
+
+<main class="wrap">
+
+  <!-- Character card -->
+  <div class="card player">
+    <div class="badge">
+      <div class="big">🐍</div>
+      <small class="pixel">CLASS:<br>GAME MAKER</small>
+    </div>
+    <div class="stats">
+      <div class="stat-row" style="--c: var(--purple)"><span>👻 Horror bravery</span><div class="bar"><i data-w="95"></i></div><span class="num pixel">95</span></div>
+      <div class="stat-row" style="--c: var(--blue)"><span>🚀 Space knowledge</span><div class="bar"><i data-w="90"></i></div><span class="num pixel">90</span></div>
+      <div class="stat-row" style="--c: var(--green)"><span>🧮 Math &amp; science</span><div class="bar"><i data-w="88"></i></div><span class="num pixel">88</span></div>
+      <div class="stat-row" style="--c: var(--orange)"><span>🎨 Creativity</span><div class="bar"><i data-w="92"></i></div><span class="num pixel">92</span></div>
+      <div class="stat-row" style="--c: var(--yellow)"><span>🍟 Fry power</span><div class="bar"><i data-w="100"></i></div><span class="num pixel">100</span></div>
+    </div>
+  </div>
+
+  <!-- About -->
+  <section id="about" class="card">
+    <h2>⭐ About me</h2>
+    <p class="lead">Hi! I'm Yiming. I love video games, especially spooky Roblox horror games, and one day I want to make my own games for real. I also love space, math, science and building things. When I'm not playing games, I'm making content for YouTube!</p>
+    <div class="grid">
+      <div class="tile" style="--c:#1fb45f"><div class="emoji">💚</div><b>Favorite color</b><h3>Green</h3></div>
+      <div class="tile" style="--c:#ff8a3d"><div class="emoji">🍟🥭</div><b>Favorite food</b><h3>Fries or mango</h3></div>
+      <div class="tile" style="--c:#a9774a"><div class="emoji">🐍</div><b>Favorite animal</b><h3>Ball pythons</h3><p>Calm, curious and they curl up into a ball!</p></div>
+      <div class="tile" style="--c:#9c6bff"><div class="emoji">🎮</div><b>When I grow up</b><h3>Game developer</h3><p>…and maybe an astronaut too.</p></div>
     </div>
 
-    <div class="spider-web top-left"></div>
-    <div class="spider-web top-right"></div>
-    <div class="spider-web bottom-left"></div>
-    <div class="spider-web bottom-right"></div>
-    
-    <div class="floating-ghost ghost1"></div>
-    <div class="floating-ghost ghost2"></div>
-    <div class="floating-ghost ghost3"></div>
-
-    <!-- Game Info Modals -->
-    <div id="dandys-world-modal" class="game-modal">
-        <div class="modal-content">
-            <button class="modal-close" aria-label="Close modal">&times;</button>
-            <div class="modal-header">
-                <h3>Dandy's World</h3>
-            </div>
-            <ul class="fact-list">
-                <li>Dandy's World is a mascot horror survival multiplayer experience created by BlushCrunch Studio.</li>
-                <li>The game was created on January 26th, 2024, but wasn't publicly available until its Alpha release on June 14th, 2024.</li>
-                <li>Players must extract machines, collect research, earn new toons, and survive deadly "twisteds" that roam around pursuing players.</li>
-                <li>The game was inspired by Bendy and the Ink Machine, Dead by Daylight, and Identity V.</li>
-                <li>Dandy's World reached 1 Billion visits on December 26th, 2024 and 2 Billion visits by February 21st, 2025.</li>
-                <li>The world record for highest floor reached in a Glitchless run is 267 on Version 0.7.2.</li>
-                <li>The most dangerous entity is Twisted Dandy, who can instantly kill a toon regardless of how many hearts they have.</li>
-                <li>The highest number of active players was 638,852 on March 14th, 2025, when the Yatta Update was released.</li>
-            </ul>
-        </div>
+    <h2 style="margin-top:28px">🧠 Things I'm into</h2>
+    <div class="grid">
+      <div class="tile" style="--c:#3fa7ff"><div class="emoji">🔭</div><h3>Space</h3><p>Rockets, planets and the Apollo missions.</p></div>
+      <div class="tile" style="--c:#1fb45f"><div class="emoji">🧪</div><h3>Math &amp; science</h3><p>Solving problems and finding out how the world works.</p></div>
+      <div class="tile" style="--c:#ff8a3d"><div class="emoji">🛠️</div><h3>Engineering</h3><p>Building and designing new things.</p></div>
+      <div class="tile" style="--c:#ff4d6d"><div class="emoji">🎬</div><h3>YouTube</h3><p>Making videos and content for my YouTube channel.</p></div>
     </div>
+  </section>
 
-    <div id="scary-sushi-modal" class="game-modal">
-        <div class="modal-content">
-            <button class="modal-close" aria-label="Close modal">&times;</button>
-            <div class="modal-header">
-                <h3>Scary Sushi</h3>
-            </div>
-            <ul class="fact-list">
-                <li>Scary Sushi is a horror, cooking-based Roblox game created by Evil Twin Games.</li>
-                <li>Players take part in a group interview for a Chef position at the notorious Moonlight Sushi restaurant.</li>
-                <li>Midway through the interview, a group called the Night Keepers warns that this is no ordinary restaurant and that you must escape.</li>
-                <li>The game features multiple entities including Norman, Oscar, Ivy, Flame, Triplets, Blob, and Kiyoku.</li>
-                <li>Players must cook sushi dishes while avoiding monsters throughout the game.</li>
-                <li>The game has expanded to include Chapter 2, with more chapters planned.</li>
-                <li>There are different game modes including Story mode and Survival mode.</li>
-                <li>Players must find ingredients in special rooms and use cooking stations to prepare dishes.</li>
-            </ul>
-        </div>
+  <!-- Horror games -->
+  <section id="horror" class="card spooky">
+    <h2><span class="eyes">👀</span> My favorite horror game</h2>
+    <p class="lead">This is the Roblox game I play the most. Only read on if you're brave!</p>
+    <div class="grid">
+      <div class="tile">
+        <div class="emoji">🎡</div>
+        <b>By BlushCrunch Studio</b>
+        <h3>Dandy's World</h3>
+        <p>Survive a creepy amusement park! You fix machines, collect research and unlock new toons while the Twisteds hunt you down. Watch out for Twisted Dandy.</p>
+      </div>
     </div>
+  </section>
 
-    <!-- Game Creator Info Modals -->
-    <div id="blushcrunch-modal" class="game-modal">
-        <div class="modal-content">
-            <button class="modal-close" aria-label="Close modal">&times;</button>
-            <div class="modal-header">
-                <h3>BlushCrunch Studio</h3>
-            </div>
-            <ul class="fact-list">
-                <li>BlushCrunch Studio is the development team behind the popular Roblox horror game Dandy's World.</li>
-                <li>The studio was founded in late 2023 by a team of experienced Roblox developers.</li>
-                <li>Before Dandy's World, the team worked on smaller projects that helped them perfect their horror game mechanics.</li>
-                <li>BlushCrunch focuses on creating immersive horror experiences with unique art styles.</li>
-                <li>The name "BlushCrunch" was inspired by the contrast between cute aesthetics and horror elements in their games.</li>
-                <li>The studio is known for its regular content updates and strong community engagement.</li>
-                <li>They often host special in-game events during holidays like Halloween and Christmas.</li>
-                <li>BlushCrunch's development philosophy centers on "horror that's both accessible and challenging."</li>
-            </ul>
-        </div>
+  <!-- Space -->
+  <section id="space" class="card space">
+    <span class="rocket">🚀</span>
+    <h2>🌍 Space explorer</h2>
+    <p>I've visited the Kennedy Space Center in Florida lots of times! My favorite thing to learn about is the Apollo missions, when astronauts flew all the way to the Moon.</p>
+    <div class="facts">
+      <span>🌕 Apollo 11 landed on the Moon in 1969</span>
+      <span>👨‍🚀 12 people have walked on the Moon</span>
+      <span>🏗️ The Saturn V rocket is taller than the Statue of Liberty</span>
     </div>
+  </section>
 
-    <div id="eviltwin-modal" class="game-modal">
-        <div class="modal-content">
-            <button class="modal-close" aria-label="Close modal">&times;</button>
-            <div class="modal-header">
-                <h3>Evil Twin Games</h3>
-            </div>
-            <ul class="fact-list">
-                <li>Evil Twin Games is the development studio responsible for creating Scary Sushi.</li>
-                <li>The studio was formed in early 2024 by a duo of Roblox developers who were previously known for their puzzle games.</li>
-                <li>Evil Twin Games gets its name from the theme of duality that runs through their games.</li>
-                <li>The studio pioneered the "horror cooking" sub-genre on Roblox, blending survival horror with cooking mechanics.</li>
-                <li>They're known for their detailed environment design and atmospheric sound design.</li>
-                <li>Evil Twin Games has won several Roblox community awards for innovation in gameplay.</li>
-                <li>The developers regularly interact with fans on social media and incorporate player feedback into updates.</li>
-                <li>Their roadmap for Scary Sushi includes at least five chapters in total, with new cooking mechanics in each.</li>
-            </ul>
-        </div>
-    </div>
+  <!-- Games I made -->
+  <section id="games">
+    <h2>🕹️ Games I made</h2>
+    <a class="game" href="chip-and-jump.html">
+      <span class="flag">⛳</span>
+      <div>
+        <h3>Chip &amp; Jump</h3>
+        <p>A golf game! Hit the ball, then run and jump after it to the cup. 78 courses, a daily challenge and a course builder.</p>
+      </div>
+      <span class="play pixel">PLAY ▶</span>
+    </a>
+    <a class="game night" href="lantern-wick.html">
+      <span class="flag">🏮</span>
+      <span class="firefly" style="left:58%;top:30%"></span>
+      <span class="firefly" style="left:70%;top:55%;animation-delay:-2s"></span>
+      <span class="firefly" style="left:40%;top:45%;animation-delay:-3.5s"></span>
+      <div>
+        <h3>Lantern Wick</h3>
+        <p>Guide a paper lantern home through the hills at night before its wick burns out. Catch fireflies to feed the flame!</p>
+      </div>
+      <span class="play pixel">PLAY ▶</span>
+    </a>
+    <a class="game rodeo" href="thunderhoof.html">
+      <span class="flag">🐂</span>
+      <span class="dust" style="left:66%"></span>
+      <span class="dust" style="left:74%;animation-delay:-.9s"></span>
+      <div>
+        <h3>Thunderhoof</h3>
+        <p>A 3D bull riding showdown! Lean, grip and sit deep to stay on a bucking bull for 8 seconds. 54 bulls in the pen and up to 5 players.</p>
+      </div>
+      <span class="play pixel">PLAY ▶</span>
+    </a>
+    <div class="soon">🛠️ More games coming soon… maybe a horror one 👻</div>
+  </section>
 
-    <!-- Structured Data for SEO -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "ProfilePage",
-      "headline": "Yiming Wang's Horror Gaming World",
-      "author": {
-        "@type": "Person",
-        "name": "Yiming Wang",
-        "knowsAbout": ["Roblox", "Horror Games", "Space Exploration", "Dandy's World", "Scary Sushi"]
-      },
-      "specialty": ["Roblox Horror Games", "Space Exploration"],
-      "mainEntity": {
-        "@type": "Person",
-        "name": "Yiming Wang",
-        "alternateName": "rip_mewtwo",
-        "description": "2nd grader and Roblox horror game enthusiast with a passion for space exploration",
-        "knowsAbout": ["Roblox", "Horror Games", "Space Exploration", "Dandy's World", "Scary Sushi"]
-      }
+  <!-- Quiz -->
+  <section id="quiz" class="card">
+    <h2>❓ How well do you know me?</h2>
+    <p class="lead">Read the page, then try my quiz!</p>
+    <div id="quiz-box"></div>
+    <div class="score pixel" id="score">ANSWER ALL 11 QUESTIONS!</div>
+  </section>
+
+  <footer class="pixel">MADE BY YIMING WANG · <span id="year"></span><br>THANKS FOR VISITING!</footer>
+</main>
+
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  // Stat bars fill in
+  setTimeout(() => {
+    document.querySelectorAll(".bar i").forEach(b => b.style.width = b.dataset.w + "%");
+  }, 250);
+
+  // Confetti
+  function confetti() {
+    const colors = ["#1fb45f", "#a6e35a", "#ffcd3c", "#ff8a3d", "#3fa7ff", "#9c6bff"];
+    for (let i = 0; i < 90; i++) {
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = Math.random() * 100 + "vw";
+      c.style.background = colors[i % colors.length];
+      c.style.animationDuration = 2 + Math.random() * 2 + "s";
+      c.style.animationDelay = Math.random() * 0.6 + "s";
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 5000);
     }
-    </script>
+  }
+  document.getElementById("avatar").addEventListener("click", confetti);
 
-    <!-- JavaScript for interactive effects -->
-    <script src="script.js"></script>
-    <script src="cursor-options.js"></script>
+  // Quiz
+  const QUIZ = [
+    { q: "What is my favorite color?", a: ["Red", "Green", "Blue"], right: 1 },
+    { q: "What is my favorite animal?", a: ["Ball python", "Dog", "Shark"], right: 0 },
+    { q: "Which food do I love?", a: ["Broccoli", "Pizza", "Fries or mango"], right: 2 },
+    { q: "Which space place have I visited lots of times?", a: ["Kennedy Space Center", "The Moon", "Mars"], right: 0 },
+    { q: "What do I want to be when I grow up?", a: ["Chef", "Game developer", "Firefighter"], right: 1 },
+    { q: "What is the name of the golf game I made?", a: ["Chip & Jump", "Golf Hero", "Hole in One"], right: 0 },
+    { q: "Which space missions do I love learning about?", a: ["Star Wars", "Apollo", "Pokémon"], right: 1 },
+    { q: "Where do I post the content I make?", a: ["TikTok", "YouTube", "The newspaper"], right: 1 },
+    { q: "What does a ball python do when it's scared?", a: ["Barks", "Flies away", "Curls into a ball"], right: 2 },
+    { q: "How many courses does Chip & Jump have?", a: ["16", "78", "100"], right: 1 },
+    { q: "In Lantern Wick, what feeds the lantern's flame?", a: ["Fireflies", "Water", "Snowballs"], right: 0 },
+  ];
+  let answered = 0, correct = 0;
+  const box = document.getElementById("quiz-box");
+  QUIZ.forEach((item, qi) => {
+    const wrap = document.createElement("div");
+    wrap.className = "q";
+    wrap.innerHTML = `<p>${qi + 1}. ${item.q}</p><div class="opts"></div>`;
+    const opts = wrap.querySelector(".opts");
+    item.a.forEach((text, ai) => {
+      const btn = document.createElement("button");
+      btn.textContent = text;
+      btn.onclick = () => {
+        const buttons = opts.querySelectorAll("button");
+        buttons.forEach(b => b.disabled = true);
+        buttons[item.right].classList.add("right");
+        if (ai === item.right) correct++; else btn.classList.add("wrong");
+        answered++;
+        if (answered === QUIZ.length) {
+          const msg = correct === QUIZ.length ? "PERFECT! YOU KNOW ME!" : correct >= 8 ? "NICE JOB!" : "READ AGAIN & RETRY!";
+          document.getElementById("score").textContent = `SCORE: ${correct} / ${QUIZ.length} · ${msg}`;
+          if (correct === QUIZ.length) confetti();
+        } else {
+          document.getElementById("score").textContent = `SCORE: ${correct} / ${answered}`;
+        }
+      };
+      opts.appendChild(btn);
+    });
+    box.appendChild(wrap);
+  });
+
+  // Ball python slithering across the hero
+  const svg = document.getElementById("snake");
+  const NS = "http://www.w3.org/2000/svg";
+  const SEGS = 22, GAP = 9;
+  const parts = [];
+  for (let i = SEGS - 1; i >= 0; i--) {
+    const c = document.createElementNS(NS, "circle");
+    const taper = i > SEGS - 6 ? (SEGS - i) * 1.6 + 2 : 10;
+    c.setAttribute("r", taper);
+    c.setAttribute("fill", i % 3 === 0 ? "#3b2414" : "#c99a5b");
+    svg.appendChild(c);
+    parts[i] = c;
+  }
+  const head = document.createElementNS(NS, "g");
+  head.innerHTML = `
+    <ellipse rx="14" ry="11" fill="#3b2414"/>
+    <ellipse rx="9" ry="6" cx="-2" fill="#c99a5b"/>
+    <circle cx="6" cy="-5" r="3" fill="#fff"/><circle cx="7" cy="-5" r="1.6" fill="#111"/>
+    <circle cx="6" cy="5" r="3" fill="#fff"/><circle cx="7" cy="5" r="1.6" fill="#111"/>
+    <path d="M14 0 l9 0 m-3 -3 l3 3 l-3 3" stroke="#ff4d6d" stroke-width="2" fill="none" stroke-linecap="round" class="tongue"/>`;
+  svg.appendChild(head);
+
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let x = innerWidth * 0.3;
+  function tick(t) {
+    const w = innerWidth;
+    if (!still) x += 1.1;
+    if (x > w + 60) x = -260;
+    svg.setAttribute("width", w);
+    for (let i = 0; i < SEGS; i++) {
+      parts[i].setAttribute("cx", x - i * GAP);
+      parts[i].setAttribute("cy", 22 + Math.sin(t / 260 - i * 0.55) * 8);
+    }
+    const hy = 22 + Math.sin(t / 260 + 0.55) * 8;
+    head.setAttribute("transform", `translate(${x + GAP + 2} ${hy})`);
+    head.querySelector(".tongue").style.opacity = Math.sin(t / 90) > 0.3 ? 1 : 0;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+</script>
 </body>
-</html> 
+</html>
