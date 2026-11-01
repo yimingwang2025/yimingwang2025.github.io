@@ -473,7 +473,7 @@
     <h2>❓ How well do you know me?</h2>
     <p class="lead">Read the page, then try my quiz!</p>
     <div id="quiz-box"></div>
-    <div class="score pixel" id="score">ANSWER ALL 11 QUESTIONS!</div>
+    <div class="score pixel" id="score">ANSWER ALL THE QUESTIONS!</div>
   </section>
 
   <footer class="pixel">MADE BY YIMING WANG · <span id="year"></span><br>THANKS FOR VISITING!</footer>
@@ -516,8 +516,19 @@
     { q: "What does a ball python do when it's scared?", a: ["Barks", "Flies away", "Curls into a ball"], right: 2 },
     { q: "How many courses does Chip & Jump have?", a: ["16", "78", "100"], right: 1 },
     { q: "In Lantern Wick, what feeds the lantern's flame?", a: ["Fireflies", "Water", "Snowballs"], right: 0 },
+    { q: "What is my favorite Roblox horror game?", a: ["Doors", "Dandy's World", "Piggy"], right: 1 },
+    { q: "Which studio made Dandy's World?", a: ["BlushCrunch Studio", "Pixar", "Nintendo"], right: 0 },
+    { q: "In Dandy's World, who should you watch out for?", a: ["Happy Clown", "Friendly Fred", "Twisted Dandy"], right: 2 },
+    { q: "What year did Apollo 11 land on the Moon?", a: ["1959", "1969", "1999"], right: 1 },
+    { q: "How many people have walked on the Moon?", a: ["12", "3", "50"], right: 0 },
+    { q: "In Thunderhoof, how long do you have to stay on the bull?", a: ["1 minute", "3 seconds", "8 seconds"], right: 2 },
+    { q: "Who is the hero of my Halloween game?", a: ["A pumpkin", "A vampire", "A cat"], right: 0 },
+    { q: "How many levels does Pumpkin's Midnight Run have?", a: ["5", "20", "99"], right: 1 },
+    { q: "What should you wear for Hush Room?", a: ["Sunglasses", "A helmet", "Headphones"], right: 2 },
+    { q: "Which of my stats is a perfect 100?", a: ["Fry power", "Horror bravery", "Space knowledge"], right: 0 },
   ];
   let answered = 0, correct = 0;
+  document.getElementById("score").textContent = `ANSWER ALL ${QUIZ.length} QUESTIONS!`;
   const box = document.getElementById("quiz-box");
   QUIZ.forEach((item, qi) => {
     const wrap = document.createElement("div");
@@ -534,7 +545,7 @@
         if (ai === item.right) correct++; else btn.classList.add("wrong");
         answered++;
         if (answered === QUIZ.length) {
-          const msg = correct === QUIZ.length ? "PERFECT! YOU KNOW ME!" : correct >= 8 ? "NICE JOB!" : "READ AGAIN & RETRY!";
+          const msg = correct === QUIZ.length ? "PERFECT! YOU KNOW ME!" : correct >= QUIZ.length * 0.75 ? "NICE JOB!" : "READ AGAIN & RETRY!";
           document.getElementById("score").textContent = `SCORE: ${correct} / ${QUIZ.length} · ${msg}`;
           if (correct === QUIZ.length) confetti();
         } else {
